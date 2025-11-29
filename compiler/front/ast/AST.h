@@ -4,6 +4,7 @@
 #include "../../compiler_ir/include/Value.h" 
 
 class IRGenerator; // 前置声明
+class Value;
 
 // AST 基类
 class ASTNode {
