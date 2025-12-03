@@ -9,9 +9,10 @@ varDecl -> bType varDefList SE_SEMICOLON
 varDefList -> varDef | varDefList SE_COMMA varDef
 varDef -> ID | ID OP_ASSIGN initVal
 initVal -> exp
+# [修改] 合并类型定义，移除 funcType
 bType -> KW_INT | KW_FLOAT | KW_VOID
-funcDef -> funcType ID SE_LPAREN funcFParamsOpt SE_RPAREN block
-funcType -> KW_VOID | KW_INT | KW_FLOAT
+# [修改] funcDef 现在直接使用 bType
+funcDef -> bType ID SE_LPAREN funcFParamsOpt SE_RPAREN block
 funcFParamsOpt -> funcFParams | ε
 funcFParams -> funcFParam | funcFParams SE_COMMA funcFParam
 funcFParam -> bType ID

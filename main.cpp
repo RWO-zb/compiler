@@ -22,7 +22,7 @@ int main(int argc, char** argv) {
     SLRGenerator slrGen;
     slrGen.build(); // 加载文法并生成表
     slrGen.printSLRTable();
-    return 0; // 暂时退出，为了看输出
+    //return 0; // 暂时退出，为了看输出
     // 3. 语法分析 & 构建 AST (Role B)
     Parser parser(lexer, slrGen);
     ASTNode* root = parser.parse();
