@@ -1,0 +1,44 @@
+Program -> compUnit
+compUnit -> compUnit decl | compUnit funcDef | decl | funcDef
+decl -> constDecl | varDecl
+constDecl -> KW_CONST bType constDefList SE_SEMICOLON
+constDefList -> constDef | constDefList SE_COMMA constDef
+constDef -> ID OP_ASSIGN constInitVal
+constInitVal -> constExp
+varDecl -> bType varDefList SE_SEMICOLON
+varDefList -> varDef | varDefList SE_COMMA varDef
+varDef -> ID | ID OP_ASSIGN initVal
+initVal -> exp
+bType -> KW_INT | KW_FLOAT | KW_VOID
+funcDef -> funcType ID SE_LPAREN funcFParamsOpt SE_RPAREN block
+funcType -> KW_VOID | KW_INT | KW_FLOAT
+funcFParamsOpt -> funcFParams | ε
+funcFParams -> funcFParam | funcFParams SE_COMMA funcFParam
+funcFParam -> bType ID
+block -> SE_LBRACE blockItems SE_RBRACE
+blockItems -> blockItems blockItem | ε
+blockItem -> decl | stmt
+stmt -> lVal OP_ASSIGN exp SE_SEMICOLON | exp SE_SEMICOLON | SE_SEMICOLON | block | ifStmt | returnStmt
+ifStmt -> KW_IF SE_LPAREN cond SE_RPAREN stmt | KW_IF SE_LPAREN cond SE_RPAREN stmt KW_ELSE stmt
+returnStmt -> KW_RETURN exp SE_SEMICOLON | KW_RETURN SE_SEMICOLON
+exp -> addExp
+cond -> lOrExp
+lVal -> ID
+primaryExp -> SE_LPAREN exp SE_RPAREN | lVal | number
+number -> INT_CONST | FLOAT_CONST
+unaryExp -> primaryExp | funcCall | unaryOp unaryExp
+funcCall -> ID SE_LPAREN funcRParamsOpt SE_RPAREN
+funcRParamsOpt -> funcRParams | ε
+funcRParams -> exp | funcRParams SE_COMMA exp
+unaryOp -> OP_PLUS | OP_MINUS | OP_NOT
+mulExp -> unaryExp | mulExp mulOp unaryExp
+mulOp -> OP_MUL | OP_DIV | OP_MOD
+addExp -> mulExp | addExp addOp mulExp
+addOp -> OP_PLUS | OP_MINUS
+relExp -> addExp | relExp relOp addExp
+relOp -> OP_LT | OP_GT | OP_LE | OP_GE
+eqExp -> relExp | eqExp eqOp relExp
+eqOp -> OP_EQ | OP_NEQ
+lAndExp -> eqExp | lAndExp OP_AND eqExp
+lOrExp -> lAndExp | lOrExp OP_OR lAndExp
+constExp -> addExp

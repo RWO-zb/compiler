@@ -1,87 +1,161 @@
 #pragma once
+
 #include <vector>
 #include <string>
-#include "../../compiler_ir/include/Value.h" 
+#include <iostream>
 
-class IRGenerator; // 前置声明
+// 前置声明，避免头文件循环依赖
+// 真正的定义在 compiler_ir/include/Value.h 和 front/codegen/IRGenerator.h 中
+class IRGenerator;
+class Value; 
 
+// ==========================================================
 // AST 基类
+// ==========================================================
 class ASTNode {
 public:
     virtual ~ASTNode() = default;
-    // [Role C] 核心：接受 Visitor
-    virtual Value* accept(IRGenerator& visitor) = 0;
+    
+    // 核心接口：Visitor 模式，用于接受 IRGenerator 访问并生成中间代码
+    // 返回值 Value* 对应后端的 IR 值（如指令、常量、变量地址等）
+    virtual Value* accept(IRGenerator& gen) = 0;
 };
 
-// --- 表达式节点 ---
-class ExprNode : public ASTNode {};
+// 表达式基类 (Expression)
+class Exp : public ASTNode {};
 
-class BinaryExp : public ExprNode {
+// 语句基类 (Statement)
+class Stmt : public ASTNode {};
+
+// ==========================================================
+// 具体节点定义
+// ==========================================================
+
+// 编译单元 (根节点)
+class CompUnit : public ASTNode {
 public:
-    std::string op; // "+", "-", "==" 等
-    ASTNode *lhs, *rhs;
-    BinaryExp(std::string o, ASTNode* l, ASTNode* r) : op(o), lhs(l), rhs(r) {}
-    Value* accept(IRGenerator& visitor) override;
+    // 存放 Decl (VarDefStmt) 或 FuncDef
+    std::vector<ASTNode*> children; 
+
+    Value* accept(IRGenerator& gen) override;
 };
 
-class NumberExp : public ExprNode {
+// 函数形式参数定义 (例如: int a)
+class FuncFParam : public ASTNode {
 public:
-    int val;
-    NumberExp(int v) : val(v) {}
-    Value* accept(IRGenerator& visitor) override;
+    std::string type; // "int" 等
+    std::string name; // 参数名
+
+    FuncFParam(const std::string& t, const std::string& n) 
+        : type(t), name(n) {}
+    
+    Value* accept(IRGenerator& gen) override;
 };
 
-class IdExp : public ExprNode {
+// 代码块: { stmt1; stmt2; ... }
+class BlockStmt : public Stmt {
 public:
-    std::string name;
-    IdExp(std::string n) : name(n) {}
-    Value* accept(IRGenerator& visitor) override;
+    // 存放语句列表
+    std::vector<ASTNode*> stmts; 
+
+    BlockStmt() = default;
+    BlockStmt(const std::vector<ASTNode*>& s) : stmts(s) {}
+    
+    Value* accept(IRGenerator& gen) override;
 };
 
-// --- 语句节点 ---
-class StmtNode : public ASTNode {};
-
-class BlockStmt : public StmtNode {
+// 函数定义: int main() { ... }
+class FuncDef : public ASTNode {
 public:
-    std::vector<ASTNode*> stmts;
-    Value* accept(IRGenerator& visitor) override;
+    std::string type; // 返回类型 "int", "void"
+    std::string name; // 函数名
+    std::vector<FuncFParam*> params; // 参数列表
+    BlockStmt* body;  // 函数体
+
+    FuncDef(const std::string& t, const std::string& n, 
+            const std::vector<FuncFParam*>& p, BlockStmt* b) 
+        : type(t), name(n), params(p), body(b) {}
+        
+    Value* accept(IRGenerator& gen) override;
 };
 
-class IfStmt : public StmtNode {
-public:
-    ASTNode *cond, *thenBlock, *elseBlock;
-    IfStmt(ASTNode* c, ASTNode* t, ASTNode* e) : cond(c), thenBlock(t), elseBlock(e) {}
-    Value* accept(IRGenerator& visitor) override;
-};
-
-class ReturnStmt : public StmtNode {
-public:
-    ASTNode *retVal;
-    ReturnStmt(ASTNode* v) : retVal(v) {}
-    Value* accept(IRGenerator& visitor) override;
-};
-
-class VarDefStmt : public StmtNode {
+// 变量定义: int a = 10;
+class VarDefStmt : public Stmt {
 public:
     std::string type;
     std::string name;
-    ASTNode* initVal; // 可为 nullptr
-    VarDefStmt(std::string t, std::string n, ASTNode* i) : type(t), name(n), initVal(i) {}
-    Value* accept(IRGenerator& visitor) override;
+    Exp* initVal; // 初始值表达式，如果没有初始化则为 nullptr
+
+    VarDefStmt(const std::string& t, const std::string& n, Exp* i) 
+        : type(t), name(n), initVal(i) {}
+        
+    Value* accept(IRGenerator& gen) override;
 };
 
-class FuncDef : public ASTNode {
+// If 语句: if (cond) thenStmt else elseStmt
+class IfStmt : public Stmt {
 public:
-    std::string retType;
+    Exp* cond;
+    Stmt* thenStmt;
+    Stmt* elseStmt; // 可为 nullptr
+
+    IfStmt(Exp* c, Stmt* t, Stmt* e) 
+        : cond(c), thenStmt(t), elseStmt(e) {}
+        
+    Value* accept(IRGenerator& gen) override;
+};
+
+// Return 语句: return exp;
+class ReturnStmt : public Stmt {
+public:
+    Exp* retValue; // 可为 nullptr (如 return;)
+
+    ReturnStmt(Exp* v) : retValue(v) {}
+    
+    Value* accept(IRGenerator& gen) override;
+};
+
+// 二元表达式: a + b, a > b 等
+class BinaryExp : public Exp {
+public:
+    std::string op; // "+", "-", "*", "/", "%", "<", ">=", "==", "&&", "||" 等
+    Exp* lhs;
+    Exp* rhs;
+
+    BinaryExp(const std::string& o, Exp* l, Exp* r) 
+        : op(o), lhs(l), rhs(r) {}
+        
+    Value* accept(IRGenerator& gen) override;
+};
+
+// 函数调用表达式: add(a, b)
+class CallExp : public Exp {
+public:
+    std::string funcName;
+    std::vector<Exp*> args;
+
+    CallExp(const std::string& n, const std::vector<Exp*>& a) 
+        : funcName(n), args(a) {}
+        
+    Value* accept(IRGenerator& gen) override;
+};
+
+// 数字常量: 123
+class NumberExp : public Exp {
+public:
+    int val;
+
+    NumberExp(int v) : val(v) {}
+    
+    Value* accept(IRGenerator& gen) override;
+};
+
+// 标识符 (引用变量): a
+class IdExp : public Exp {
+public:
     std::string name;
-    // vector<string> params; // 参数表
-    BlockStmt* body;
-    Value* accept(IRGenerator& visitor) override;
-};
 
-// 根节点
-class CompUnit : public ASTNode {
-public:
-    std::vector<ASTNode*> children; // 全局变量或函数
-    Value* accept(IRGenerator& visitor) override;
+    IdExp(const std::string& n) : name(n) {}
+    
+    Value* accept(IRGenerator& gen) override;
 };

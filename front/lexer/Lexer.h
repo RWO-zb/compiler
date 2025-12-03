@@ -3,30 +3,40 @@
 #include "../common/SymbolTable.h"
 #include <string>
 #include <vector>
+#include <fstream>
+#include <unordered_map>
 
-// [Role D] 负责人：适配原 LexicalAnaly.cpp
+// DFA 状态定义
+struct DFAState {
+    std::unordered_map<int, int> transitions;
+    TokenType type;
+};
+
 class Lexer {
 private:
     std::string filename;
     SymbolTable* symTable;
-    // [Role D] TODO: 这里可能需要原 automatic 机相关的状态变量
+    std::ifstream file;
+    
+    // 缓存机制 (用于 peek)
+    Token _cachedToken;
+    bool _hasCached;
+    
+    // 词法分析状态
+    DFAState DFA[10]; // 根据 LexicalAnaly.cpp 的状态数量调整
+    int lineNo;
+    std::string currentLine;
+    int col;
+
+    // 内部函数
+    void initializeDFA();
+    int getInputType(char ch);
+    Token nextInternal(); // 实际的扫描逻辑
 
 public:
-    Lexer(const std::string& file, SymbolTable* st) : filename(file), symTable(st) {
-        // [Role D] TODO: 在这里调用原代码的初始化逻辑 (如 nfa2dfa)
-    }
+    Lexer(const std::string& file, SymbolTable* st);
+    ~Lexer();
 
-    // 核心接口
-    Token next() {
-        // [Role D] TODO: 改造原 LexicalAnaly.cpp 的扫描逻辑
-        // 每次调用返回一个 Token，而不是直接写入文件
-        // 遇到 ID 时，暂时不需要往 SymbolTable 填 Value，只需返回 ID Token
-        return {END_OFF, "", 0}; 
-    }
-    
-    // 辅助：预读当前 Token (不消耗)
-    Token peek() {
-        // [Role D] TODO: 实现预读
-        return {END_OFF, "", 0};
-    }
+    Token next();
+    Token peek();
 };
