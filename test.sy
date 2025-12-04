@@ -1,10 +1,5 @@
-int main() {
-    int a = 10;
-    int b = 5;
-    int c = a + b;
-    if (c > 10) {
-        return c;
-    } else {
-        return 0;
-    }
+int a = 10; 
+int main(){ 
+a=10; 
+return 0; 
 }
