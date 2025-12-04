@@ -1,6 +1,7 @@
 #include "Parser.h"
 #include <iostream> 
 #include <string>
+#include <vector>
 
 // ======================================================
 // 1. 辅助函数实现
@@ -18,20 +19,18 @@ ASTNode* Parser::makeLeaf(const Token& tok) {
             // 将关键字也视为 IdExp，以便在 buildAST 中提取类型名称
             return new IdExp(tok.content); 
         default:
-            // 对于运算符等其他 Token，暂时返回 nullptr，
-            // 它们会在 buildAST 中通过产生式信息恢复，或者在这里也可以扩展处理
             return nullptr;
     }
 }
 
-// 辅助函数：安全获取子节点，防止越界
+// 辅助函数：安全获取子节点
 ASTNode* getChild(const std::vector<ASTNode*>& children, int index) {
     if (index >= 0 && index < children.size()) return children[index];
     return nullptr;
 }
 
 // ======================================================
-// 2. 核心 AST 构建逻辑 (已修复变量定义和语句处理)
+// 2. 核心 AST 构建逻辑
 // ======================================================
 ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& children) {
     std::string lhs = prod.lhs;
@@ -40,7 +39,7 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
     // 1. Program -> compUnit
     if (lhs == "Program") return getChild(children, 0);
 
-    // 2. CompUnit -> compUnit decl | compUnit funcDef ...
+    // 2. CompUnit
     if (lhs == "compUnit") {
         if (len == 2) { 
             auto root = dynamic_cast<CompUnit*>(getChild(children, 0));
@@ -49,16 +48,14 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
             if (item) root->children.push_back(item);
             return root;
         }
-        // compUnit -> decl | funcDef
         auto root = new CompUnit();
         ASTNode* item = getChild(children, 0);
         if (item) root->children.push_back(item);
         return root;
     }
 
-    // 3. FuncDef -> bType ID ( params ) block
+    // 3. FuncDef
     if (lhs == "funcDef") {
-        // Index通常为: 0:Type, 1:ID, 2:(, 3:Params?, 4:), 5:Block
         std::string retType = "void";
         if (auto t = dynamic_cast<IdExp*>(getChild(children, 0))) retType = t->name;
         
@@ -66,48 +63,37 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
         if (auto id = dynamic_cast<IdExp*>(getChild(children, 1))) name = id->name;
         
         std::vector<FuncFParam*> params;
-        // 参数处理暂略，需实现 funcFParams 逻辑
-        
         BlockStmt* body = dynamic_cast<BlockStmt*>(children.back());
         return new FuncDef(retType, name, params, body);
     }
 
-    // 4. Decl & VarDecl (修复了索引偏移)
-    if (lhs == "decl") return getChild(children, 0); // varDecl or constDecl
+    // 4. Decl & VarDecl
+    if (lhs == "decl") return getChild(children, 0); 
 
-    if (lhs == "varDecl") {
-        // varDecl -> bType varDefList ;
-        // 返回 varDefList (index 1) 而不是 bType (index 0)
-        return getChild(children, 1);
-    }
+    if (lhs == "varDecl") return getChild(children, 1);
     
     if (lhs == "constDecl") return getChild(children, 2); 
 
     if (lhs == "varDefList" || lhs == "constDefList") {
-        // 简化：varDefList -> varDef
-        // 或者是列表递归，这里简单返回最后一个有效节点
         if (len == 1) return getChild(children, 0);
         return getChild(children, 2); 
     }
 
     if (lhs == "varDef" || lhs == "constDef") {
-        // varDef -> ID | ID = init
         auto id = dynamic_cast<IdExp*>(getChild(children, 0));
         if (id) {
             Exp* init = nullptr;
-            // 如果有初始化: ID = val (len >= 3)
             if (len >= 3) init = dynamic_cast<Exp*>(getChild(children, 2));
             return new VarDefStmt("int", id->name, init); 
         }
     }
 
     // 5. Block
-    if (lhs == "block") return getChild(children, 1); // { blockItems }
+    if (lhs == "block") return getChild(children, 1); 
     
     if (lhs == "blockItems") {
         auto list = dynamic_cast<BlockStmt*>(getChild(children, 0));
         auto item = getChild(children, 1);
-        
         if (!list) list = new BlockStmt();
         if (item) list->stmts.push_back(item);
         return list;
@@ -117,11 +103,9 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
 
     // 6. Stmt
     if (lhs == "stmt") {
-        // stmt -> lVal = exp ;
         if (prod.rhs.size() > 1 && prod.rhs[1] == "OP_ASSIGN") {
              return new BinaryExp("=", (Exp*)getChild(children, 0), (Exp*)getChild(children, 2));
         }
-        // block, if, return, exp;
         if (len == 1) return getChild(children, 0); 
         if (len == 2) return getChild(children, 0); 
     }
@@ -143,27 +127,19 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
     if (lhs == "addExp" || lhs == "mulExp" || lhs == "relExp" || lhs == "eqExp") {
         if (len == 1) return getChild(children, 0);
         if (len == 3) {
-            std::string op = prod.rhs[1]; // 从产生式获取操作符
-            
-            // 如果 makeLeaf 返回了操作符的 Leaf 节点，尝试从节点获取
+            std::string op = prod.rhs[1];
             if (auto opNode = dynamic_cast<IdExp*>(getChild(children, 1))) {
                 op = opNode->name;
             } else {
-                // 如果 Token 被丢弃了(nullptr)，手动映射常见操作符
-                if (op == "addOp") op = "+"; // 简化处理
-                // 实际上应该通过产生式具体的 rhs 符号来判断
-                // 例如: addExp -> mulExp OP_PLUS mulExp
+                if (op == "addOp") op = "+"; 
             }
             return new BinaryExp(op, (Exp*)getChild(children, 0), (Exp*)getChild(children, 2));
         }
     }
     
-    // 传递操作符
     if (lhs == "addOp" || lhs == "mulOp" || lhs == "relOp" || lhs == "eqOp") {
-        // 假设 children[0] 是 OP Token 转换的 IdExp
-        // 如果 makeLeaf 返回 nullptr，这里需要手动根据 prod.rhs[0] 创建 IdExp
         if (getChild(children, 0)) return getChild(children, 0);
-        return new IdExp(prod.rhs[0]); // 使用产生式右部符号作为名称
+        return new IdExp(prod.rhs[0]); 
     }
 
     if (lhs == "funcCall") {
@@ -173,35 +149,68 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
     }
 
     if (lhs == "primaryExp") {
-        if (len == 3) return getChild(children, 1); // ( exp )
+        if (len == 3) return getChild(children, 1); 
         return getChild(children, 0);
     }
     
     if (lhs == "initVal") return getChild(children, 0);
 
-    // 默认透传
     if (!children.empty()) return children[0];
     return nullptr;
 }
 
 // ======================================================
-// 3. 解析主循环 (之前丢失的部分！)
+// 3. 解析主循环 (包含符号映射修改)
 // ======================================================
 ASTNode* Parser::parse() {
     stateStack.push(0); // 初始状态
+    
+    // 符号栈：用于输出展示，初始为 #
+    std::vector<std::string> symbolStack;
+    symbolStack.push_back("#"); 
+
+    int stepCount = 1; // 步骤序号
+
     while (true) {
         Token lookahead = lexer.peek();
         Action act = slr.getAction(stateStack.top(), lookahead.type);
+        
+        // --- 准备输出信息 ---
+        std::string stackTopSym = symbolStack.back();
+        
+        std::string inputSym = lookahead.content;
+        if (lookahead.type == END_OFF) inputSym = ""; 
+        
+        std::string actionStr;
+        if (act.type == Action::SHIFT) actionStr = "move"; 
+        else if (act.type == Action::REDUCE) actionStr = "reduction";
+        else if (act.type == Action::ACCEPT) actionStr = "accept";
+        else actionStr = "error";
+
+        // 输出格式: [序号] [TAB] [栈顶符号]#[面临输入符号] [TAB] [动作]
+        std::cout << stepCount++ << "\t" << stackTopSym << "#" << inputSym << "\t" << actionStr << std::endl;
+        // ------------------
 
         if (act.type == Action::SHIFT) {
-            // 移进：压入状态，消耗 Token
+            // 移进
             stateStack.push(act.target);
             Token t = lexer.next();
-            // 将 Token 转换为 AST 叶子节点压栈
             nodeStack.push(makeLeaf(t));
+            
+            // [关键修改]：根据 Token 类型入栈标准符号名，而非原始字符串
+            // 这样栈顶就会显示 Ident#... 而不是 a#...
+            if (t.type == ID) {
+                symbolStack.push_back("Ident");
+            } else if (t.type == INT_CONST) {
+                symbolStack.push_back("IntConst"); 
+            } else if (t.type == FLOAT_CONST) {
+                symbolStack.push_back("FloatConst");
+            } else {
+                symbolStack.push_back(t.content); // 关键字和符号保持原样
+            }
         }
         else if (act.type == Action::REDUCE) {
-            // 规约：弹出栈元素，构建新 AST 节点
+            // 规约
             Production prod = slr.getProduction(act.target);
             int k = prod.rhsLen();
             
@@ -215,24 +224,25 @@ ASTNode* Parser::parse() {
                 }
                 
                 if (!stateStack.empty()) stateStack.pop();
+                
+                // 符号出栈
+                if (symbolStack.size() > 1) symbolStack.pop_back(); 
             }
             
-            // 调用构建逻辑
+            // 产生式左部符号入栈
+            symbolStack.push_back(prod.lhs);
+
             ASTNode* newNode = buildAST(prod, children);
             nodeStack.push(newNode);
             
-            // GOTO 跳转
-            if (stateStack.empty()) return nullptr; // Error
+            if (stateStack.empty()) return nullptr;
             int next = slr.getGoto(stateStack.top(), prod.lhs);
             stateStack.push(next);
         }
         else if (act.type == Action::ACCEPT) {
-            // 接受
             return nodeStack.top();
         }
         else {
-            // 错误
-            // std::cerr << "Syntax error at line " << lookahead.line << std::endl;
             return nullptr;
         }
     }

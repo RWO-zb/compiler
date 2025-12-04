@@ -58,7 +58,8 @@ void SLRGenerator::initSymbolMap() {
 
 // ========== 加载文法 ==========
 void SLRGenerator::loadGrammar(const string& filename) {
-    cout << "Loading grammar from " << filename << "...\n";
+    // [修改] 注释调试输出
+    // cout << "Loading grammar from " << filename << "...\n";
     
     // 初始化符号映射
     initSymbolMap();
@@ -144,11 +145,12 @@ void SLRGenerator::loadGrammar(const string& filename) {
     // 计算能推导ε的非终结符
     computeEpsilonDeriving();
     
-    cout << "=== Grammar Loading Complete ===\n";
-    cout << "Loaded " << productions.size() << " productions.\n";
-    cout << "Non-terminals: " << nonTerminals.size() << "\n";
-    cout << "Terminals: " << terminals.size() << "\n";
-    cout << "Non-terminals that can derive ε: " << epsilonDerivingNonTerms.size() << "\n\n";
+    // [修改] 注释调试输出
+    // cout << "=== Grammar Loading Complete ===\n";
+    // cout << "Loaded " << productions.size() << " productions.\n";
+    // cout << "Non-terminals: " << nonTerminals.size() << "\n";
+    // cout << "Terminals: " << terminals.size() << "\n";
+    // cout << "Non-terminals that can derive ε: " << epsilonDerivingNonTerms.size() << "\n\n";
 }
 
 // ========== 计算能推导ε的非终结符 ==========
@@ -253,7 +255,8 @@ set<TokenType> SLRGenerator::getFirstOfSymbols(const vector<string>& symbols, in
 
 // ========== 完整的FIRST和FOLLOW集计算 ==========
 void SLRGenerator::computeFirstFollow() {
-    cout << "Computing FIRST and FOLLOW sets...\n";
+    // [修改] 注释调试输出
+    // cout << "Computing FIRST and FOLLOW sets...\n";
     
     // ========== 计算FIRST集 ==========
     
@@ -316,9 +319,6 @@ void SLRGenerator::computeFirstFollow() {
                     break;
                 }
             }
-            
-            // 如果所有Xi都能推导ε，理论上FIRST(A)应该包含ε
-            // 但我们的FIRST集只存储终结符，所以这里不处理
         }
     }
     
@@ -393,12 +393,15 @@ void SLRGenerator::computeFirstFollow() {
         }
     }
     
-    cout << "FIRST sets computed in " << firstIteration << " iterations.\n";
-    cout << "FOLLOW sets computed in " << followIteration << " iterations.\n\n";
+    // [修改] 注释调试输出
+    // cout << "FIRST sets computed in " << firstIteration << " iterations.\n";
+    // cout << "FOLLOW sets computed in " << followIteration << " iterations.\n\n";
 }
 
 // ========== 验证FIRST/FOLLOW集正确性 ==========
 void SLRGenerator::verifyFirstFollow() {
+    // [修改] 整个函数内容注释掉或仅注释 cout
+    /*
     cout << "=== Verifying FIRST and FOLLOW sets ===\n";
     
     // 检查一些关键非终结符
@@ -455,6 +458,7 @@ void SLRGenerator::verifyFirstFollow() {
     }
     
     cout << "\n";
+    */
 }
 
 // ========== 计算闭包 ==========
@@ -553,7 +557,8 @@ bool SLRGenerator::isSameItems(const set<LR0Item>& a, const set<LR0Item>& b) {
 
 // ========== 构建LR(0)项目集规范族 ==========
 void SLRGenerator::buildLR0() {
-    cout << "Building LR(0) item sets...\n";
+    // [修改] 注释调试输出
+    // cout << "Building LR(0) item sets...\n";
     
     // 创建初始状态：S' -> ·Program
     set<LR0Item> initialItems;
@@ -617,13 +622,15 @@ void SLRGenerator::buildLR0() {
         }
     }
     
-    cout << "Built " << states.size() << " LR(0) states.\n";
-    cout << "Total symbols considered: " << allSymbols.size() << "\n\n";
+    // [修改] 注释调试输出
+    // cout << "Built " << states.size() << " LR(0) states.\n";
+    // cout << "Total symbols considered: " << allSymbols.size() << "\n\n";
 }
 
 // ========== 构建SLR分析表 ==========
 void SLRGenerator::buildSLRTable() {
-    cout << "Building SLR parsing table...\n";
+    // [修改] 注释调试输出
+    // cout << "Building SLR parsing table...\n";
     
     // 清空表
     actionTable.clear();
@@ -688,9 +695,12 @@ void SLRGenerator::buildSLRTable() {
                     if (actionTable[i].find(token) != actionTable[i].end()) {
                         Action existing = actionTable[i][token];
                         if (existing.type == Action::REDUCE) {
+                            // [修改] 移进-规约冲突警告可保留或注释，视要求而定。这里注释掉以求纯净
+                            /*
                             cout << "Shift-Reduce conflict at state " << i 
                                       << " on token " << static_cast<int>(token) 
                                       << " (Shift preferred)\n";
+                            */
                         }
                     }
                     
@@ -711,15 +721,19 @@ void SLRGenerator::buildSLRTable() {
                             if (actionTable[i].find(token) != actionTable[i].end()) {
                                 Action existing = actionTable[i][token];
                                 if (existing.type == Action::SHIFT) {
+                                    /*
                                     cout << "Shift-Reduce conflict at state " << i 
                                               << " on token " << static_cast<int>(token) 
                                               << " (Reduction by production " << prod.id << ")\n";
+                                    */
                                     continue; // SLR冲突：优先移进
                                 } else if (existing.type == Action::REDUCE) {
+                                    /*
                                     cout << "Reduce-Reduce conflict at state " << i 
                                               << " on token " << static_cast<int>(token) 
                                               << " between productions " << existing.target 
                                               << " and " << prod.id << "\n";
+                                    */
                                 }
                             }
                             
@@ -742,18 +756,20 @@ void SLRGenerator::buildSLRTable() {
         }
     }
     
-    cout << "SLR parsing table built successfully.\n";
-    cout << "Statistics:\n";
-    cout << "  States: " << states.size() << "\n";
-    cout << "  Shift actions: " << shiftCount << "\n";
-    cout << "  Reduce actions: " << reduceCount << "\n";
-    cout << "  Accept actions: " << acceptCount << "\n";
-    cout << "  Error actions: " << errorCount << "\n";
-    cout << "  Total table entries: " << (shiftCount + reduceCount + acceptCount + errorCount) << "\n\n";
+    // [修改] 注释调试输出
+    // cout << "SLR parsing table built successfully.\n";
+    // cout << "Statistics:\n";
+    // cout << "  States: " << states.size() << "\n";
+    // cout << "  Shift actions: " << shiftCount << "\n";
+    // cout << "  Reduce actions: " << reduceCount << "\n";
+    // cout << "  Accept actions: " << acceptCount << "\n";
+    // cout << "  Error actions: " << errorCount << "\n";
+    // cout << "  Total table entries: " << (shiftCount + reduceCount + acceptCount + errorCount) << "\n\n";
 }
 
-// ========== 调试输出函数 ==========
+// ========== 调试输出函数 (完全注释掉内容) ==========
 void SLRGenerator::printFirstSets() {
+    /*
     cout << "=== FIRST Sets ===\n";
     for (const auto& pair : firstSets) {
         cout << "FIRST(" << pair.first << ") = { ";
@@ -763,9 +779,11 @@ void SLRGenerator::printFirstSets() {
         cout << "}\n";
     }
     cout << "\n";
+    */
 }
 
 void SLRGenerator::printFollowSets() {
+    /*
     cout << "=== FOLLOW Sets ===\n";
     for (const auto& pair : followSets) {
         cout << "FOLLOW(" << pair.first << ") = { ";
@@ -775,75 +793,12 @@ void SLRGenerator::printFollowSets() {
         cout << "}\n";
     }
     cout << "\n";
+    */
 }
 
 void SLRGenerator::printSLRTable() {
+    /*
     cout << "=== SLR Parsing Table (Summary) ===\n";
-    
-    // 显示前3个状态的详细信息
-    int maxStatesToShow = min(3, (int)states.size());
-    
-    cout << "\nAction Table (first " << maxStatesToShow << " states):\n";
-    for (int i = 0; i < maxStatesToShow; i++) {
-        cout << "State " << i << ":\n";
-        
-        // 显示项目集
-        cout << "  Items:\n";
-        for (const auto& item : states[i].items) {
-            const Production& prod = productions[item.prodId];
-            cout << "    " << prod.lhs << " -> ";
-            for (int k = 0; k < prod.rhs.size(); k++) {
-                if (k == item.dotPos) cout << "· ";
-                cout << prod.rhs[k] << " ";
-            }
-            if (item.dotPos == prod.rhs.size()) cout << "·";
-            cout << "\n";
-        }
-        
-        // 显示动作
-        cout << "  Actions:\n";
-        for (const auto& entry : actionTable[i]) {
-            TokenType token = entry.first;
-            Action action = entry.second;
-            
-            if (action.type != Action::ERROR) {
-                cout << "    Token " << static_cast<int>(token) << ": ";
-                switch (action.type) {
-                    case Action::SHIFT:
-                        cout << "shift to state " << action.target;
-                        break;
-                    case Action::REDUCE:
-                        cout << "reduce by production " << action.target;
-                        break;
-                    case Action::ACCEPT:
-                        cout << "accept";
-                        break;
-                    case Action::ERROR:
-                        // 不显示错误动作
-                        break;
-                }
-                cout << "\n";
-            }
-        }
-    }
-    
-    // 显示产生式列表
-    cout << "\n=== Productions ===\n";
-    int maxProdsToShow = min(20, (int)productions.size());
-    for (int i = 0; i < maxProdsToShow; i++) {
-        const auto& prod = productions[i];
-        cout << prod.id << ". " << prod.lhs << " -> ";
-        if (prod.rhs.empty()) {
-            cout << "ε";
-        } else {
-            for (const auto& sym : prod.rhs) {
-                cout << sym << " ";
-            }
-        }
-        cout << "\n";
-    }
-    if (productions.size() > maxProdsToShow) {
-        cout << "... and " << (productions.size() - maxProdsToShow) << " more productions\n";
-    }
-    cout << "\n";
+    ... 
+    */
 }

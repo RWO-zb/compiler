@@ -6,9 +6,9 @@
 #include <set>
 #include <map>
 #include <algorithm>
-#include <fstream>  // 解决 ifstream 报错
-#include <sstream>  // 解决 stringstream 报错
-#include <utility>  // 解决 pair 报错
+#include <fstream>  
+#include <sstream>  
+#include <utility>  
 // ===============================================
 #include "../common/Token.h"
 using namespace std;
@@ -70,12 +70,13 @@ public:
     void build() {
         loadGrammar("../../grammar.txt");
         computeFirstFollow();
-        verifyFirstFollow();
+        // verifyFirstFollow(); // [修改] 注释掉调试输出
         buildLR0();
         buildSLRTable();
-        printFirstSets();
-        printFollowSets();
-        printSLRTable();
+        // [修改] 注释掉所有打印函数的调用，保持输出纯净
+        // printFirstSets();
+        // printFollowSets();
+        // printSLRTable();
     }
     
     // 核心函数
