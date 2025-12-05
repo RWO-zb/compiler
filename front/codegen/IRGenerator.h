@@ -30,13 +30,13 @@ public:
     // Visitor pattern: 接收 AST 节点指针，返回 IR Value 指针
     Value* visit(CompUnit* node);
     Value* visit(FuncDef* node);
-    Value* visit(FuncFParam* node); // 【新增】
+    Value* visit(FuncFParam* node);
     Value* visit(BlockStmt* node);
     Value* visit(VarDefStmt* node);
     Value* visit(IfStmt* node);
     Value* visit(ReturnStmt* node);
     Value* visit(BinaryExp* node);
-    Value* visit(CallExp* node);    // 【新增】
+    Value* visit(CallExp* node);  
     Value* visit(NumberExp* node);
     Value* visit(IdExp* node);
 };

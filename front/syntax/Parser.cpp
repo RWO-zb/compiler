@@ -3,10 +3,6 @@
 #include <string>
 #include <vector>
 
-// ======================================================
-// 1. 辅助函数实现
-// ======================================================
-
 // 生成叶子节点
 ASTNode* Parser::makeLeaf(const Token& tok) {
     switch (tok.type) {
@@ -29,9 +25,6 @@ ASTNode* getChild(const std::vector<ASTNode*>& children, int index) {
     return nullptr;
 }
 
-// ======================================================
-// 2. 核心 AST 构建逻辑
-// ======================================================
 ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& children) {
     std::string lhs = prod.lhs;
     int len = children.size();
@@ -159,9 +152,6 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
     return nullptr;
 }
 
-// ======================================================
-// 3. 解析主循环 (包含符号映射修改)
-// ======================================================
 ASTNode* Parser::parse() {
     stateStack.push(0); // 初始状态
     
@@ -197,8 +187,6 @@ ASTNode* Parser::parse() {
             Token t = lexer.next();
             nodeStack.push(makeLeaf(t));
             
-            // [关键修改]：根据 Token 类型入栈标准符号名，而非原始字符串
-            // 这样栈顶就会显示 Ident#... 而不是 a#...
             if (t.type == ID) {
                 symbolStack.push_back("Ident");
             } else if (t.type == INT_CONST) {

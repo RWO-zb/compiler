@@ -27,7 +27,7 @@ struct Production {
     int rhsLen() const { return rhs.size(); }
 };
 
-// [Role A] 负责人：SLR表生成
+//SLR表生成
 class SLRGenerator {
 private:
     // 核心数据结构
@@ -70,13 +70,8 @@ public:
     void build() {
         loadGrammar("../../grammar.txt");
         computeFirstFollow();
-        // verifyFirstFollow(); // [修改] 注释掉调试输出
         buildLR0();
         buildSLRTable();
-        // [修改] 注释掉所有打印函数的调用，保持输出纯净
-        // printFirstSets();
-        // printFollowSets();
-        // printSLRTable();
     }
     
     // 核心函数

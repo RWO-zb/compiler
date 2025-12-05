@@ -6,11 +6,11 @@ enum TokenType {
     // 标识符与常量
     ID, INT_CONST, FLOAT_CONST,
     
-    // 关键字 (补全缺失的部分)
+    // 关键字 
     KW_INT, KW_VOID, KW_RETURN, KW_IF, KW_ELSE, KW_WHILE, 
     KW_FLOAT, KW_CONST, KW_MAIN, 
     
-    // 运算符 (补全缺失的部分)
+    // 运算符 
     OP_PLUS, OP_MINUS, OP_MUL, OP_DIV, OP_ASSIGN, 
     OP_MOD, // %
     OP_EQ, OP_NEQ, OP_LT, OP_GT, OP_LE, OP_GE,

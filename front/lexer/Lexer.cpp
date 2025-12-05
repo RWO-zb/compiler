@@ -20,9 +20,6 @@ Lexer::~Lexer() {
 }
 
 void Lexer::initializeDFA() {
-    // 初始化所有状态默认为 Error 或 Start
-    // 这里简化处理，未定义的字符如果不处理会走默认逻辑
-    
     // 0: Start
     // 1: ID/KW
     // 3: Int
@@ -84,7 +81,7 @@ Token Lexer::nextInternal() {
              static std::unordered_map<string, TokenType> kwMap = {
                 {"int", KW_INT}, {"void", KW_VOID}, {"return", KW_RETURN},
                 {"if", KW_IF}, {"else", KW_ELSE}, {"float", KW_FLOAT},
-                {"const", KW_CONST} // {"main", KW_MAIN} 通常 main 也是 ID 或特殊处理
+                {"const", KW_CONST} 
             };
             if (kwMap.count(buffer)) return {kwMap[buffer], buffer, lineNo};
             return {ID, buffer, lineNo};
@@ -100,7 +97,7 @@ Token Lexer::nextInternal() {
         }
 
         // 3. 处理运算符和界符 (手动 peek)
-        col++; // 已经吃掉了第一个字符
+        col++; 
         
         if (ch == '+') return {OP_PLUS, "+", lineNo};
         if (ch == '-') return {OP_MINUS, "-", lineNo};

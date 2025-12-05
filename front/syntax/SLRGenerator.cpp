@@ -58,8 +58,6 @@ void SLRGenerator::initSymbolMap() {
 
 // ========== 加载文法 ==========
 void SLRGenerator::loadGrammar(const string& filename) {
-    // [修改] 注释调试输出
-    // cout << "Loading grammar from " << filename << "...\n";
     
     // 初始化符号映射
     initSymbolMap();
@@ -144,13 +142,6 @@ void SLRGenerator::loadGrammar(const string& filename) {
     
     // 计算能推导ε的非终结符
     computeEpsilonDeriving();
-    
-    // [修改] 注释调试输出
-    // cout << "=== Grammar Loading Complete ===\n";
-    // cout << "Loaded " << productions.size() << " productions.\n";
-    // cout << "Non-terminals: " << nonTerminals.size() << "\n";
-    // cout << "Terminals: " << terminals.size() << "\n";
-    // cout << "Non-terminals that can derive ε: " << epsilonDerivingNonTerms.size() << "\n\n";
 }
 
 // ========== 计算能推导ε的非终结符 ==========
@@ -255,8 +246,6 @@ set<TokenType> SLRGenerator::getFirstOfSymbols(const vector<string>& symbols, in
 
 // ========== 完整的FIRST和FOLLOW集计算 ==========
 void SLRGenerator::computeFirstFollow() {
-    // [修改] 注释调试输出
-    // cout << "Computing FIRST and FOLLOW sets...\n";
     
     // ========== 计算FIRST集 ==========
     
@@ -392,10 +381,6 @@ void SLRGenerator::computeFirstFollow() {
             }
         }
     }
-    
-    // [修改] 注释调试输出
-    // cout << "FIRST sets computed in " << firstIteration << " iterations.\n";
-    // cout << "FOLLOW sets computed in " << followIteration << " iterations.\n\n";
 }
 
 // ========== 验证FIRST/FOLLOW集正确性 ==========
@@ -557,8 +542,6 @@ bool SLRGenerator::isSameItems(const set<LR0Item>& a, const set<LR0Item>& b) {
 
 // ========== 构建LR(0)项目集规范族 ==========
 void SLRGenerator::buildLR0() {
-    // [修改] 注释调试输出
-    // cout << "Building LR(0) item sets...\n";
     
     // 创建初始状态：S' -> ·Program
     set<LR0Item> initialItems;
@@ -622,15 +605,10 @@ void SLRGenerator::buildLR0() {
         }
     }
     
-    // [修改] 注释调试输出
-    // cout << "Built " << states.size() << " LR(0) states.\n";
-    // cout << "Total symbols considered: " << allSymbols.size() << "\n\n";
 }
 
 // ========== 构建SLR分析表 ==========
 void SLRGenerator::buildSLRTable() {
-    // [修改] 注释调试输出
-    // cout << "Building SLR parsing table...\n";
     
     // 清空表
     actionTable.clear();
@@ -695,7 +673,6 @@ void SLRGenerator::buildSLRTable() {
                     if (actionTable[i].find(token) != actionTable[i].end()) {
                         Action existing = actionTable[i][token];
                         if (existing.type == Action::REDUCE) {
-                            // [修改] 移进-规约冲突警告可保留或注释，视要求而定。这里注释掉以求纯净
                             /*
                             cout << "Shift-Reduce conflict at state " << i 
                                       << " on token " << static_cast<int>(token) 
@@ -756,18 +733,9 @@ void SLRGenerator::buildSLRTable() {
         }
     }
     
-    // [修改] 注释调试输出
-    // cout << "SLR parsing table built successfully.\n";
-    // cout << "Statistics:\n";
-    // cout << "  States: " << states.size() << "\n";
-    // cout << "  Shift actions: " << shiftCount << "\n";
-    // cout << "  Reduce actions: " << reduceCount << "\n";
-    // cout << "  Accept actions: " << acceptCount << "\n";
-    // cout << "  Error actions: " << errorCount << "\n";
-    // cout << "  Total table entries: " << (shiftCount + reduceCount + acceptCount + errorCount) << "\n\n";
 }
 
-// ========== 调试输出函数 (完全注释掉内容) ==========
+// ========== 调试输出函数  ==========
 void SLRGenerator::printFirstSets() {
     /*
     cout << "=== FIRST Sets ===\n";

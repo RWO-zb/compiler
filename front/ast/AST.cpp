@@ -1,10 +1,6 @@
 #include "AST.h"
 #include "../codegen/IRGenerator.h"
 
-// ASTNode 基类的默认实现（通常不会被调用，因为是纯虚函数，但为了安全保留）
-// 注意：如果 ASTNode 中是纯虚函数 (=0)，则不需要这行，但在某些实现中为了兼容性保留
-// 这里我们假设 ASTNode 的 accept 是纯虚的，具体实现在子类
-
 // 编译单元
 Value* CompUnit::accept(IRGenerator& gen) { 
     return gen.visit(this); 

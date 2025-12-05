@@ -4,11 +4,10 @@
 #include <string>
 #include "../../compiler_ir/include/Value.h" 
 
-// [Role D] 负责人
 class SymbolTable {
 private:
     // 作用域栈：vector 的每个元素代表一层作用域
-    // map: 变量名 -> LLVM Value* (由 Role C 在生成代码时填入)
+    // map: 变量名 -> LLVM Value* 
     std::vector<std::map<std::string, Value*>> scopes;
 
 public:
@@ -36,7 +35,5 @@ public:
         }
         return nullptr;
     }
-    
-    // [Role D] TODO: 可能需要辅助函数判断是否是全局作用域
     bool isGlobal() const { return scopes.size() == 1; }
 };

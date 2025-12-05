@@ -18,12 +18,12 @@ private:
     SymbolTable* symTable;
     std::ifstream file;
     
-    // 缓存机制 (用于 peek)
+    // 缓存机制 
     Token _cachedToken;
     bool _hasCached;
     
     // 词法分析状态
-    DFAState DFA[10]; // 根据 LexicalAnaly.cpp 的状态数量调整
+    DFAState DFA[10]; 
     int lineNo;
     std::string currentLine;
     int col;
@@ -31,7 +31,7 @@ private:
     // 内部函数
     void initializeDFA();
     int getInputType(char ch);
-    Token nextInternal(); // 实际的扫描逻辑
+    Token nextInternal(); 
 
 public:
     Lexer(const std::string& file, SymbolTable* st);

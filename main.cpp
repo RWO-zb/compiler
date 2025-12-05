@@ -1,4 +1,3 @@
-// [Role D] 负责人
 #include <iostream>
 #include <vector>
 #include <string>
@@ -67,12 +66,9 @@ void printToken(const Token& t) {
             else attr = "?";
             break;
         
-        // 补充：代码中可能存在的 OP_NOT (!)
-        // 如果你的词法分析器支持 ! 单独出现且作业要求里没写，可能需要特殊处理
-        // 根据题目 (20) 是 !=，未提及单目 !，这里暂归类为 OP 但无标号或假设不单独出现
         case OP_NOT: 
             typeStr = "OP"; 
-            attr = "?"; // 题目未定义单目 ! 的编号
+            attr = "?"; 
             break;
 
         // --- 界符 ---
@@ -117,8 +113,6 @@ int main(int argc, char** argv) {
     Lexer lexer(sourceFile, &symTable); 
     SLRGenerator slrGen;
     
-    // 注意：建议去 SLRGenerator.cpp 中注释掉 build() 过程中的 cout 输出，
-    // 否则会混杂在你的词法输出中。
     slrGen.build(); 
 
     // 3. 语法分析 & 构建 AST & 输出归约过程

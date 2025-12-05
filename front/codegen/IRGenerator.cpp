@@ -11,7 +11,6 @@ IRGenerator::IRGenerator(Module* m, SymbolTable* st) : module(m), currentFunc(nu
     builder = new IRBuilder(nullptr, module);
 }
 
-// 兼容性占位
 Value* ASTNode::accept(IRGenerator& gen) { return nullptr; }
 
 Value* IRGenerator::visit(CompUnit* node) {
@@ -43,17 +42,11 @@ Value* IRGenerator::visit(FuncDef* node) {
         
         Value* alloc = builder->create_alloca(Type::get_int32_type(module));
         builder->create_store(arg, alloc);
-        // 注意：简单的 flat map 可能会导致同名局部变量覆盖全局变量的 key
-        // 但对于本作业的简单测试用例通常足够
         valMap[p->name] = alloc; 
         idx++;
     }
 
     if (node->body) node->body->accept(*this);
-
-    // 退出函数前清空 currentFunc 指针（虽然 parse 流程是线性的，但这更是为了逻辑严谨）
-    // 实际对于 CompUnit 遍历，不需要置空，因为下一个 FuncDef 会覆盖它
-    // 但如果有嵌套定义则需小心，C-- 不支持嵌套函数，所以安全
 
     if (!builder->get_insert_block()->get_terminator()) {
         if (node->type == "void") builder->create_void_ret();
@@ -69,15 +62,11 @@ Value* IRGenerator::visit(BlockStmt* node) {
     return nullptr;
 }
 
-// 【关键修改】支持全局变量定义
 Value* IRGenerator::visit(VarDefStmt* node) {
     if (currentFunc == nullptr) {
-        // === 全局变量处理 ===
         Constant* initConst = nullptr;
         if (node->initVal) {
-            // 获取初始值
             Value* v = node->initVal->accept(*this);
-            // 尝试转为常量 (全局变量初始化必须是常量)
             if (auto c = dynamic_cast<Constant*>(v)) {
                 initConst = c;
             } else {
@@ -85,19 +74,15 @@ Value* IRGenerator::visit(VarDefStmt* node) {
                 initConst = ConstantInt::get(0, module);
             }
         } else {
-            // 默认初始化为 0
             initConst = ConstantInt::get(0, module);
         }
 
-        // 创建全局变量
-        // 参数: name, module, type, is_const(false), initializer
         GlobalVariable* gVar = GlobalVariable::create(node->name, module, Type::get_int32_type(module), false, initConst);
-        
+
         // 存入符号表
         valMap[node->name] = gVar;
 
     } else {
-        // === 局部变量处理 (保持原有逻辑) ===
         Value* alloc = builder->create_alloca(Type::get_int32_type(module));
         valMap[node->name] = alloc;
         if (node->initVal) {
@@ -205,11 +190,6 @@ Value* IRGenerator::visit(CallExp* node) {
 Value* IRGenerator::visit(IdExp* node) {
     if (valMap.find(node->name) != valMap.end()) {
         Value* ptr = valMap[node->name];
-        
-        // 如果是全局变量或 alloca 出来的局部变量，它们本质上都是指针，需要 load 才能取值
-        // 但如果 ptr 本身已经是常量（比如 optimize 后的结果），则不用 load
-        // 在这里，GlobalVariable 和 AllocaInst 都是指针类型，所以必须 load
-        
         return builder->create_load(ptr);
     }
     std::cerr << "Error: Use of undefined variable " << node->name << std::endl;

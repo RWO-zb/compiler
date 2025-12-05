@@ -5,7 +5,6 @@
 #include <stack>
 #include <iostream>
 
-// [Role B] 负责人
 class Parser {
 private:
     Lexer& lexer;

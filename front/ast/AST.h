@@ -4,18 +4,12 @@
 #include <string>
 #include <iostream>
 
-// 前置声明，避免头文件循环依赖
-// 真正的定义在 compiler_ir/include/Value.h 和 front/codegen/IRGenerator.h 中
 class IRGenerator;
 class Value; 
 
-// ==========================================================
-// AST 基类
-// ==========================================================
 class ASTNode {
 public:
     virtual ~ASTNode() = default;
-    
     // 核心接口：Visitor 模式，用于接受 IRGenerator 访问并生成中间代码
     // 返回值 Value* 对应后端的 IR 值（如指令、常量、变量地址等）
     virtual Value* accept(IRGenerator& gen) = 0;
@@ -26,10 +20,6 @@ class Exp : public ASTNode {};
 
 // 语句基类 (Statement)
 class Stmt : public ASTNode {};
-
-// ==========================================================
-// 具体节点定义
-// ==========================================================
 
 // 编译单元 (根节点)
 class CompUnit : public ASTNode {
@@ -52,7 +42,6 @@ public:
     Value* accept(IRGenerator& gen) override;
 };
 
-// 代码块: { stmt1; stmt2; ... }
 class BlockStmt : public Stmt {
 public:
     // 存放语句列表
