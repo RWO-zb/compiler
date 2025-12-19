@@ -9,13 +9,13 @@ ASTNode* Parser::makeLeaf(const Token& tok) {
         case INT_CONST:
             return new NumberExp(std::stoi(tok.content));
         case FLOAT_CONST:
-             // 暂时用整数存储，实际项目建议扩展 AST 支持浮点
+             // 暂时用整数存储
             return new NumberExp(std::stoi(tok.content)); 
         case ID:
         case KW_INT:
         case KW_VOID:
         case KW_FLOAT:
-        case KW_MAIN: // [关键] main 作为关键字，但在 AST 中被视为 IdExp (标识符表达式)
+        case KW_MAIN: // main 视为标识符
             return new IdExp(tok.content); 
         default:
             return nullptr;
@@ -32,10 +32,10 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
     std::string lhs = prod.lhs;
     int len = children.size();
 
-    // 1. Program -> compUnit
+    // 1. Program
     if (lhs == "Program") return getChild(children, 0);
 
-    // 2. CompUnit -> compUnit (decl|funcDef) | decl | funcDef
+    // 2. CompUnit
     if (lhs == "compUnit") {
         if (len == 2) { 
             auto root = dynamic_cast<CompUnit*>(getChild(children, 0));
@@ -50,7 +50,7 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
         return root;
     }
 
-    // 3. FuncDef -> bType Ident '(' funcFParamsOpt ')' block
+    // 3. FuncDef
     if (lhs == "funcDef") {
         std::string retType = "void";
         if (auto t = dynamic_cast<IdExp*>(getChild(children, 0))) retType = t->name;
@@ -59,7 +59,6 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
         if (auto id = dynamic_cast<IdExp*>(getChild(children, 1))) name = id->name;
         
         std::vector<FuncFParam*> params;
-        // 提取参数列表
         if (auto listNode = dynamic_cast<CompUnit*>(getChild(children, 3))) {
             for (auto child : listNode->children) {
                 if (auto p = dynamic_cast<FuncFParam*>(child)) {
@@ -72,13 +71,13 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
         return new FuncDef(retType, name, params, body);
     }
 
-    // 处理形参列表
+    // FuncFParams
     if (lhs == "funcFParams") {
-        if (len == 1) { // funcFParam
+        if (len == 1) { 
             auto list = new CompUnit();
             if (auto p = getChild(children, 0)) list->children.push_back(p);
             return list;
-        } else if (len == 3) { // funcFParams , funcFParam
+        } else if (len == 3) { 
             auto list = dynamic_cast<CompUnit*>(getChild(children, 0));
             if (!list) list = new CompUnit();
             if (auto p = getChild(children, 2)) list->children.push_back(p);
@@ -102,7 +101,6 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
     if (lhs == "varDecl") return getChild(children, 1); 
     if (lhs == "constDecl") return getChild(children, 2); 
 
-    // 变量定义列表
     if (lhs == "varDefList" || lhs == "constDefList") {
         if (len == 1) {
             auto list = new CompUnit();
@@ -162,6 +160,7 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
     }
 
     // 7. Expressions
+    // 二元运算
     if (lhs == "addExp" || lhs == "mulExp" || lhs == "relExp" || lhs == "eqExp" || lhs == "lAndExp" || lhs == "lOrExp") {
         if (len == 1) return getChild(children, 0);
         if (len == 3) {
@@ -173,8 +172,10 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
         }
     }
     
-    if (lhs == "addOp" || lhs == "mulOp" || lhs == "relOp" || lhs == "eqOp") {
+    // [修复1] 增加 unaryOp 的处理，确保能提取出操作符字符串
+    if (lhs == "addOp" || lhs == "mulOp" || lhs == "relOp" || lhs == "eqOp" || lhs == "unaryOp") {
         if (getChild(children, 0)) return getChild(children, 0);
+        // 如果子节点为空(makeLeaf返回nullptr)，则从产生式右部获取(例如 OP_PLUS, OP_NOT)
         if (!prod.rhs.empty()) return new IdExp(prod.rhs[0]);
     }
 
@@ -207,16 +208,42 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
     }
 
     if (lhs == "primaryExp") {
-        if (len == 3) return getChild(children, 1); 
+        if (len == 3) return getChild(children, 1); // ( exp )
         return getChild(children, 0); 
     }
     
     if (lhs == "initVal") return getChild(children, 0);
     if (lhs == "lVal") return getChild(children, 0);
+
+    // [修复2] 核心：处理单目运算 (unaryOp unaryExp)
     if (lhs == "unaryExp") {
-         if(len==1) return getChild(children, 0);
-         // 处理 funcCall 或 unaryOp
+         if(len==1) return getChild(children, 0); // primaryExp
+         // funcCall
          if(prod.rhs[0] == "funcCall") return getChild(children, 0);
+
+         // 处理 unaryOp unaryExp (例如 -5, !x)
+         if (len == 2) {
+             std::string op = "unknown";
+             if (auto opNode = dynamic_cast<IdExp*>(getChild(children, 0))) {
+                 op = opNode->name;
+             }
+             Exp* exp = dynamic_cast<Exp*>(getChild(children, 1));
+             
+             // 将单目运算转换为等价的二元运算，以便复用 IRGenerator
+             
+             // 逻辑非: !E  =>  E == 0
+             if (op == "!" || op == "OP_NOT") {
+                 return new BinaryExp("==", exp, new NumberExp(0));
+             }
+             // 负号: -E  =>  0 - E
+             else if (op == "-" || op == "OP_MINUS") {
+                 return new BinaryExp("-", new NumberExp(0), exp);
+             }
+             // 正号: +E  =>  E
+             else if (op == "+" || op == "OP_PLUS") {
+                 return exp;
+             }
+         }
     }
     
     if (!children.empty()) return children[0];
@@ -235,21 +262,15 @@ ASTNode* Parser::parse() {
         Token lookahead = lexer.peek();
         TokenType type = lookahead.type;
         
-        // =========================================================
-        // [核心修复] 处理 main 关键字问题
-        // 文法期望 ID (标识符)，但 Lexer 返回 KW_MAIN (关键字)。
-        // 如果当前状态下 KW_MAIN 报错，但 ID 是合法的，则强制将其视为 ID 处理。
-        // =========================================================
+        // 处理 KW_MAIN 当作 ID 的情况
         Action act = slr.getAction(stateStack.top(), type);
-        
         if (act.type == Action::ERROR && type == KW_MAIN) {
             Action idAct = slr.getAction(stateStack.top(), ID);
             if (idAct.type != Action::ERROR) {
-                type = ID; // 欺骗 Parser，将其视为 ID
-                act = idAct; // 使用 ID 的动作
+                type = ID; 
+                act = idAct; 
             }
         }
-        // =========================================================
 
         std::string stackTopSym = symbolStack.back();
         std::string inputSym = (lookahead.type == END_OFF) ? "$" : lookahead.content;
@@ -264,10 +285,10 @@ ASTNode* Parser::parse() {
 
         if (act.type == Action::SHIFT) {
             stateStack.push(act.target);
-            Token t = lexer.next(); // 消耗 Token
+            Token t = lexer.next();
             nodeStack.push(makeLeaf(t)); 
             
-            if (t.type == ID || type == ID) symbolStack.push_back("Ident"); // 注意这里用 type 判断
+            if (t.type == ID || type == ID) symbolStack.push_back("Ident");
             else if (t.type == INT_CONST) symbolStack.push_back("IntConst"); 
             else if (t.type == FLOAT_CONST) symbolStack.push_back("FloatConst");
             else symbolStack.push_back(t.content); 
