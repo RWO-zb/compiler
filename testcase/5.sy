@@ -1,0 +1,6 @@
+int add() {
+  return 0;
+}
+void p(){
+    return;
+}

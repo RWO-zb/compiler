@@ -1,0 +1,29 @@
+int simplest_unary_example() {
+  int r1;
+  int r2;
+  r1 = !0;
+  r2 = -3; 
+  return r1 + r2; 
+}
+
+int unary_op_demo() {
+  int result;
+  int x;
+
+  result = !0;  
+  result = !1; 
+  result = -3;  
+  result = +5;  
+
+  x = 10;
+  result = -x;  
+
+  result = !x; 
+  x = 0;
+  result = !x;  
+  x = -7;
+  result = +x;  
+  return result;
+}
+
+

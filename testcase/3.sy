@@ -1,0 +1,2 @@
+const int a = 3;
+const float b = 3.0;

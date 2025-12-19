@@ -1,0 +1,7 @@
+int c = 66;
+int b = 33;
+int d = 3;
+int a = (b + c) * d;
+int h = (b + c) / d;
+int k = (b - c) % d;
+int m = (b - c) % d + a - b;

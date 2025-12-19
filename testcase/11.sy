@@ -1,0 +1,44 @@
+int main(){
+    int a = 10;
+    int b = 20;
+    int c = 30;
+    int d = 40;
+    int e = 1;
+    int f = 2;
+    int g = 4;
+    int h = 4;
+    int i = 7;
+    int j = 7;
+    int result_or;
+    int result_and;
+    int result_le;
+    int result_eq;
+    int result_ne;
+    if (a || b)
+        result_or = 1;
+    else
+        result_or = 0;
+
+    if (c && d)
+        result_and = 1;
+    else
+        result_and = 0;
+
+    if (e <= f)
+        result_le = 1;
+    else
+        result_le = 0;
+
+    if (g == h)
+        result_eq = 1;
+    else
+        result_eq = 0;
+
+    if (i != j)
+        result_ne = 1;
+    else
+        result_ne = 0;
+
+}
+
+
