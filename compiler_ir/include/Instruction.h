@@ -241,12 +241,6 @@ public:
   static BinaryInst *create_mod(Value *v1, Value *v2, BasicBlock *bb,
                                 Module *m);
 
-  // 暂时忽略
-  // static BinaryInst *create_s_bin(Value *v1, Value *v2, OpID op, BasicBlock
-  // *bb, Module *m){
-  //     return new BinaryInst(Type::get_int32_type(m), op, v1, v2, bb);
-  // };
-
   virtual BinaryInst *deepcopy(BasicBlock *parent) override {
     // 复制基本信息
     BinaryInst *newInst = new BinaryInst(type_, op_id_, parent);
@@ -598,6 +592,68 @@ public:
       newInst->use_list_.push_back(u);
     }
     // 复制Operands
+    newInst->operands_.clear();
+    for (auto o : operands_) {
+      newInst->operands_.push_back(o);
+    }
+    return newInst;
+  };
+
+private:
+  Type *dest_ty_;
+};
+
+// 【新增】浮点转整数指令类定义
+class FpToSiInst : public Instruction {
+private:
+  FpToSiInst(OpID op, Value *val, Type *ty, BasicBlock *bb);
+  FpToSiInst(Type *ty, BasicBlock *bb)
+      : Instruction(ty, Instruction::fptosi, 1, bb), dest_ty_(ty){};
+
+public:
+  static FpToSiInst *create_fptosi(Value *val, Type *ty, BasicBlock *bb);
+
+  Type *get_dest_type() const;
+
+  virtual std::string print() override;
+
+  virtual FpToSiInst *deepcopy(BasicBlock *parent) override {
+    FpToSiInst *newInst = new FpToSiInst(type_, parent);
+    newInst->use_list_.clear();
+    for (auto u : use_list_) {
+      newInst->use_list_.push_back(u);
+    }
+    newInst->operands_.clear();
+    for (auto o : operands_) {
+      newInst->operands_.push_back(o);
+    }
+    return newInst;
+  };
+
+private:
+  Type *dest_ty_;
+};
+
+// 【新增】整数转浮点指令类定义
+class SiToFpInst : public Instruction {
+private:
+  SiToFpInst(OpID op, Value *val, Type *ty, BasicBlock *bb);
+  SiToFpInst(Type *ty, BasicBlock *bb)
+      : Instruction(ty, Instruction::sitofp, 1, bb), dest_ty_(ty){};
+
+public:
+  static SiToFpInst *create_sitofp(Value *val, Type *ty, BasicBlock *bb);
+
+  Type *get_dest_type() const;
+
+  virtual std::string print() override;
+
+  virtual SiToFpInst *deepcopy(BasicBlock *parent) override {
+    SiToFpInst *newInst = new SiToFpInst(type_, parent);
+    newInst->use_list_.clear();
+    for (auto u : use_list_) {
+      newInst->use_list_.push_back(u);
+    }
     newInst->operands_.clear();
     for (auto o : operands_) {
       newInst->operands_.push_back(o);

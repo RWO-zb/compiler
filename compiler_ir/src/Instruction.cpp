@@ -5,13 +5,13 @@
  *@date 2022-10-04
  */
 
-#include "Type.h"
-#include "Module.h"
-#include "Function.h"
-#include "BasicBlock.h"
-#include "Instruction.h"
-#include "Constant.h"
-#include "IRprinter.h"
+#include "compiler_ir/include/Type.h"
+#include "compiler_ir/include/Module.h"
+#include "compiler_ir/include/Function.h"
+#include "compiler_ir/include/BasicBlock.h"
+#include "compiler_ir/include/Instruction.h"
+#include "compiler_ir/include/Constant.h"
+#include "compiler_ir/include/IRprinter.h"
 #include <cassert>
 #include <vector>
 #include <algorithm>
@@ -49,7 +49,6 @@ BinaryInst::BinaryInst(Type *ty, OpID id, Value *v1, Value *v2,
 {
     set_operand(0, v1);
     set_operand(1, v2);
-    // assertValid();
 }
 
 void BinaryInst::assertValid()
@@ -119,22 +118,14 @@ int BinaryInst::calculate() {
     auto cl = dynamic_cast<ConstantInt *>(get_operand(0))->get_value();
     auto cr = dynamic_cast<ConstantInt *>(get_operand(1))->get_value();
     switch (get_instr_type()) {
-        case add:
-            return cl + cr;
-        case sub:
-            return cl - cr;
-        case mul:
-            return cl * cr;
-        case sdiv:
-            if (cr == 0) return 0;
-            return cl / cr;
-        case mod:
-            if (cr == 0) return 0;
-            return cl % cr;
-        default:
-            assert(0 && "Invalid instr type");
+        case add: return cl + cr;
+        case sub: return cl - cr;
+        case mul: return cl * cr;
+        case sdiv: if (cr == 0) return 0; return cl / cr;
+        case mod: if (cr == 0) return 0; return cl % cr;
+        default: assert(0 && "Invalid instr type");
     }
-    return 0; // [修复] 增加默认返回值，解决 C4715 警告
+    return 0;
 }
 
 CmpInst::CmpInst(Type *ty, CmpOp op, Value *lhs, Value *rhs, 
@@ -143,7 +134,6 @@ CmpInst::CmpInst(Type *ty, CmpOp op, Value *lhs, Value *rhs,
 {
     set_operand(0, lhs);
     set_operand(1, rhs);
-    // assertValid();
 }
 
 void CmpInst::assertValid()
@@ -160,15 +150,40 @@ CmpInst *CmpInst::create_cmp(CmpOp op, Value *lhs, Value *rhs,
     return new CmpInst(m->get_int1_type(), op, lhs, rhs, bb);
 }
 
+// 【关键修复】正确区分 icmp 和 fcmp 的打印逻辑
 std::string CmpInst::print()
 {
     std::string instr_ir;
     instr_ir += "%";
     instr_ir += this->get_name();
     instr_ir += " = ";
-    instr_ir += this->get_module()->get_instr_op_name( this->get_instr_type() );
-    instr_ir += " ";
-    instr_ir += print_cmp_type(this->cmp_op_);
+    
+    // 检查操作数类型
+    Type* opType = this->get_operand(0)->get_type();
+    if (opType->is_float_type()) {
+        instr_ir += "fcmp ";
+        switch (this->cmp_op_) {
+            case GT: instr_ir += "ogt"; break;
+            case GE: instr_ir += "oge"; break;
+            case LT: instr_ir += "olt"; break;
+            case LE: instr_ir += "ole"; break;
+            case EQ: instr_ir += "oeq"; break;
+            case NE: instr_ir += "one"; break;
+            default: instr_ir += "false"; break;
+        }
+    } else {
+        instr_ir += "icmp ";
+        switch (this->cmp_op_) {
+            case GT: instr_ir += "sgt"; break;
+            case GE: instr_ir += "sge"; break;
+            case LT: instr_ir += "slt"; break;
+            case LE: instr_ir += "sle"; break;
+            case EQ: instr_ir += "eq"; break;
+            case NE: instr_ir += "ne"; break;
+            default: instr_ir += "false"; break;
+        }
+    }
+
     instr_ir += " ";
     instr_ir += this->get_operand(0)->get_type()->print();
     instr_ir += " ";
@@ -196,22 +211,15 @@ int CmpInst::calculate() {
     auto cl = dynamic_cast<ConstantInt *>(get_operand(0))->get_value();
     auto cr = dynamic_cast<ConstantInt *>(get_operand(1))->get_value();
     switch (get_cmp_op()) {
-        case GT:
-            return cl > cr;
-        case GE:
-            return cl >= cr;
-        case EQ:
-            return cl == cr;
-        case NE:
-            return cl != cr;
-        case LT:
-            return cl < cr;
-        case LE:
-            return cl <= cr;
-        default:
-            assert(0 && "Invalid instr type");
+        case GT: return cl > cr;
+        case GE: return cl >= cr;
+        case EQ: return cl == cr;
+        case NE: return cl != cr;
+        case LT: return cl < cr;
+        case LE: return cl <= cr;
+        default: assert(0 && "Invalid instr type");
     }
-    return 0; // [修复] 增加默认返回值，解决 C4715 警告
+    return 0;
 }
 
 CallInst::CallInst(Function *func, std::vector<Value *> args, BasicBlock *bb)
@@ -306,7 +314,6 @@ std::string BranchInst::print()
     std::string instr_ir;
     instr_ir += this->get_module()->get_instr_op_name( this->get_instr_type() );
     instr_ir += " ";
-    // instr_ir += this->get_operand(0)->get_type()->print();
     instr_ir += print_as_op(this->get_operand(0), true);
     if( is_cond_br() )
     {
@@ -442,7 +449,6 @@ StoreInst *StoreInst::create_store(Value *val, Value *ptr, BasicBlock *bb)
 
 std::string StoreInst::print()
 {
-    // store i32 3, i32* %ptr
     std::string instr_ir;
     instr_ir += this->get_module()->get_instr_op_name( this->get_instr_type() );
     instr_ir += " ";
@@ -458,7 +464,6 @@ LoadInst::LoadInst(Type *ty, Value *ptr, BasicBlock *bb)
     : Instruction(ty, Instruction::load, 1, bb)
 {
     assert(ptr->get_type()->is_pointer_type());
-    //assert(ty == static_cast<PointerType *>(ptr->get_type())->get_element_type());
     set_operand(0, ptr);
 }
 
@@ -474,7 +479,6 @@ Type *LoadInst::get_load_type() const
 
 std::string LoadInst::print()
 {
-    // %val = load i32* %ptr   
     std::string instr_ir;
     instr_ir += "%";
     instr_ir += this->get_name();
@@ -506,7 +510,6 @@ Type *AllocaInst::get_alloca_type() const
 
 std::string AllocaInst::print()
 {
-    // %ptr = alloca i32    
     std::string instr_ir;
     instr_ir += "%";
     instr_ir += this->get_name();
@@ -539,7 +542,74 @@ std::string ZextInst::print()
     instr_ir += "%";
     instr_ir += this->get_name();
     instr_ir += " = ";
-    instr_ir += this->get_module()->get_instr_op_name( this->get_instr_type() );
+    // 【修改】强制打印 zext 关键字，防止 get_instr_op_name 返回空
+    instr_ir += "zext"; 
+    instr_ir += " ";
+    instr_ir += this->get_operand(0)->get_type()->print();
+    instr_ir += " ";
+    instr_ir += print_as_op(this->get_operand(0), false);
+    instr_ir += " to ";
+    instr_ir += this->get_dest_type()->print();
+    return instr_ir; 
+}
+
+// 【新增】FpToSiInst 实现
+FpToSiInst::FpToSiInst(OpID op, Value *val, Type *ty, BasicBlock *bb)
+    : Instruction(ty, op, 1, bb), dest_ty_(ty)
+{
+    set_operand(0, val);
+}
+
+FpToSiInst *FpToSiInst::create_fptosi(Value *val, Type *ty, BasicBlock *bb)
+{
+    return new FpToSiInst(Instruction::fptosi, val, ty, bb);
+}
+
+Type *FpToSiInst::get_dest_type() const
+{
+    return dest_ty_;
+}
+
+std::string FpToSiInst::print()
+{
+    std::string instr_ir;
+    instr_ir += "%";
+    instr_ir += this->get_name();
+    instr_ir += " = ";
+    instr_ir += "fptosi"; // 硬编码
+    instr_ir += " ";
+    instr_ir += this->get_operand(0)->get_type()->print();
+    instr_ir += " ";
+    instr_ir += print_as_op(this->get_operand(0), false);
+    instr_ir += " to ";
+    instr_ir += this->get_dest_type()->print();
+    return instr_ir; 
+}
+
+// 【新增】SiToFpInst 实现
+SiToFpInst::SiToFpInst(OpID op, Value *val, Type *ty, BasicBlock *bb)
+    : Instruction(ty, op, 1, bb), dest_ty_(ty)
+{
+    set_operand(0, val);
+}
+
+SiToFpInst *SiToFpInst::create_sitofp(Value *val, Type *ty, BasicBlock *bb)
+{
+    return new SiToFpInst(Instruction::sitofp, val, ty, bb);
+}
+
+Type *SiToFpInst::get_dest_type() const
+{
+    return dest_ty_;
+}
+
+std::string SiToFpInst::print()
+{
+    std::string instr_ir;
+    instr_ir += "%";
+    instr_ir += this->get_name();
+    instr_ir += " = ";
+    instr_ir += "sitofp"; // 硬编码
     instr_ir += " ";
     instr_ir += this->get_operand(0)->get_type()->print();
     instr_ir += " ";

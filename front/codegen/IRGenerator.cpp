@@ -1,4 +1,4 @@
-#include "IRGenerator.h" // 确保包含了更新后的头文件
+#include "IRGenerator.h"
 #include "compiler_ir/include/Constant.h" 
 #include "compiler_ir/include/BasicBlock.h"
 #include "compiler_ir/include/Function.h"
@@ -44,7 +44,6 @@ IRGenerator::IRGenerator(Module* m, SymbolTable* st) : module(m), currentFunc(nu
     globalConstValues.clear(); // 清空全局常量表
 }
 
-// 【修改】作为成员函数实现 typeCast
 Value* IRGenerator::typeCast(Value* val, Type* targetType) {
     Type* srcType = val->get_type();
     if (Type::is_eq_type(srcType, targetType)) return val;
@@ -74,7 +73,7 @@ Value* IRGenerator::typeCast(Value* val, Type* targetType) {
     return val;
 }
 
-// 【修改】实现 evaluateConst，返回类型为 ConstVal
+// 【修改】全面增强 evaluateConst，支持所有操作符，解决全局变量初始化问题
 ConstVal IRGenerator::evaluateConst(ASTNode* node) {
     if (auto num = dynamic_cast<NumberExp*>(node)) {
         if (num->isFloat) return {true, 0, num->floatVal};
@@ -99,15 +98,28 @@ ConstVal IRGenerator::evaluateConst(ASTNode* node) {
         
         std::string op = bin->op;
         
+        // 逻辑运算 (&&, ||) 永远返回 int (0或1)
+        if (op == "&&" || op == "OP_AND") {
+            int val = (l.isFloat ? lf != 0 : li != 0) && (r.isFloat ? rf != 0 : ri != 0);
+            return {false, val, 0.0f};
+        }
+        if (op == "||" || op == "OP_OR") {
+            int val = (l.isFloat ? lf != 0 : li != 0) || (r.isFloat ? rf != 0 : ri != 0);
+            return {false, val, 0.0f};
+        }
+
         if (resIsFloat) {
             if (op == "+" || op == "OP_PLUS") return {true, 0, lf + rf};
             if (op == "-" || op == "OP_MINUS") return {true, 0, lf - rf};
             if (op == "*" || op == "OP_MUL") return {true, 0, lf * rf};
             if (op == "/" || op == "OP_DIV") return {true, 0, (rf != 0 ? lf / rf : 0)};
-            // 比较运算返回整数
+            // 比较运算
             if (op == ">" || op == "OP_GT") return {false, lf > rf, 0.0f};
             if (op == "<" || op == "OP_LT") return {false, lf < rf, 0.0f};
-            // ... 其他比较同理
+            if (op == ">=" || op == "OP_GE") return {false, lf >= rf, 0.0f};
+            if (op == "<=" || op == "OP_LE") return {false, lf <= rf, 0.0f};
+            if (op == "==" || op == "OP_EQ") return {false, lf == rf, 0.0f};
+            if (op == "!=" || op == "OP_NEQ") return {false, lf != rf, 0.0f};
         } 
         else {
             if (op == "+" || op == "OP_PLUS") return {false, li + ri, 0.0f};
@@ -115,6 +127,13 @@ ConstVal IRGenerator::evaluateConst(ASTNode* node) {
             if (op == "*" || op == "OP_MUL") return {false, li * ri, 0.0f};
             if (op == "/" || op == "OP_DIV") return {false, (ri != 0 ? li / ri : 0), 0.0f};
             if (op == "%" || op == "OP_MOD") return {false, (ri != 0 ? li % ri : 0), 0.0f};
+            // 比较运算
+            if (op == ">" || op == "OP_GT") return {false, li > ri, 0.0f};
+            if (op == "<" || op == "OP_LT") return {false, li < ri, 0.0f};
+            if (op == ">=" || op == "OP_GE") return {false, li >= ri, 0.0f};
+            if (op == "<=" || op == "OP_LE") return {false, li <= ri, 0.0f};
+            if (op == "==" || op == "OP_EQ") return {false, li == ri, 0.0f};
+            if (op == "!=" || op == "OP_NEQ") return {false, li != ri, 0.0f};
         }
     }
     return {false, 0, 0.0f};
@@ -179,7 +198,7 @@ Value* IRGenerator::visit(BlockStmt* node) {
     scopeMgr.enter();
     for (auto stmt : node->stmts) {
         if (builder->get_insert_block()->get_terminator()) {
-            break; // 停止生成后续死代码
+            break; 
         }
         if (stmt) stmt->accept(*this);
     }
@@ -188,7 +207,6 @@ Value* IRGenerator::visit(BlockStmt* node) {
 }
 
 Value* IRGenerator::visit(VarDefStmt* node) {
-    // 【修改】修复三元运算符类型不匹配 C2446
     Type* varType = nullptr;
     if (node->type == "float") 
         varType = Type::get_float_type(module);
@@ -389,7 +407,6 @@ Value* IRGenerator::visit(CallExp* node) {
     
     std::vector<Value*> args;
     auto funcType = f->get_function_type();
-    // 【修改】idx 类型改为 unsigned 匹配 get_num_of_args 返回类型
     unsigned idx = 0;
 
     for (auto argExp : node->args) {
