@@ -7,7 +7,7 @@ enum TokenType {
     ID, INT_CONST, FLOAT_CONST,
     
     // 关键字 
-    KW_INT, KW_VOID, KW_RETURN, KW_IF, KW_ELSE, KW_WHILE, 
+    KW_INT, KW_VOID, KW_RETURN, KW_IF, KW_ELSE, 
     KW_FLOAT, KW_CONST, KW_MAIN, 
     
     // 运算符 

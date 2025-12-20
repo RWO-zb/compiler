@@ -16,7 +16,7 @@ Lexer::Lexer(const std::string& f, SymbolTable* st)
     if (!getline(file, currentLine)) {
         currentLine = "";
     } else {
-        currentLine += '\n'; // 补全换行符，这对行注释很重要
+        currentLine += '\n'; // 补全换行符
     }
 }
 
@@ -54,23 +54,25 @@ Token Lexer::nextInternal() {
         // 如果文件结束且缓冲区为空，则结束
         if (ch == EOF) {
             if (buffer.empty()) return {END_OFF, "", lineNo};
-            // 否则可能还在某个状态中，强行结束（例如文件末尾没有换行符的数字）
-            // 这里简单处理：如果正在解析数字或ID，直接返回
+            // 强行结束残留状态
             if (state == IN_INT) return {INT_CONST, buffer, lineNo};
-            if (state == IN_ID) return {ID, buffer, lineNo}; // 需查表
+            if (state == IN_ID) {
+                // [修复] EOF处的 ID 也要填表
+                if (symTable) symTable->put(buffer, nullptr); 
+                return {ID, buffer, lineNo};
+            }
             return {END_OFF, "", lineNo};
         }
 
         switch (state) {
         case START:
             if (isspace(ch)) {
-                // 跳过空白，保持 START 状态
-                continue; 
+                continue; // 跳过空白
             }
             buffer += ch;
             if (isalpha(ch) || ch == '_') { state = IN_ID; }
             else if (isdigit(ch))         { state = IN_INT; }
-            else if (ch == '.')           { state = IN_FLOAT_DOT; } // .123 形式暂不支持，这里指 1.23 的 .
+            else if (ch == '.')           { state = IN_FLOAT_DOT; }
             else if (ch == '=')           { state = IN_EQ; }
             else if (ch == '>')           { state = IN_GT; }
             else if (ch == '<')           { state = IN_LT; }
@@ -79,7 +81,6 @@ Token Lexer::nextInternal() {
             else if (ch == '|')           { state = IN_OR; }
             else if (ch == '/')           { state = IN_COMMENT_START; }
             else {
-                // 单字符符号，直接返回
                 state = DONE;
                 switch (ch) {
                     case '+': type = OP_PLUS; break;
@@ -93,7 +94,6 @@ Token Lexer::nextInternal() {
                     case ';': type = SE_SEMICOLON; break;
                     case ',': type = SE_COMMA; break;
                     default: 
-                        // 未知字符，简单处理为 END_OFF 或报错
                         std::cerr << "Unknown char: " << ch << " at line " << lineNo << std::endl;
                         return {END_OFF, buffer, lineNo}; 
                 }
@@ -107,13 +107,24 @@ Token Lexer::nextInternal() {
                 retract(); // 读到了非标识符字符，回退
                 state = DONE;
                 // 查关键字表
+                // [修改] 移除了 "while"
                 static std::unordered_map<string, TokenType> kwMap = {
                     {"int", KW_INT}, {"void", KW_VOID}, {"return", KW_RETURN},
                     {"if", KW_IF}, {"else", KW_ELSE}, {"float", KW_FLOAT},
-                    {"const", KW_CONST}, {"main", KW_MAIN}, {"while", KW_WHILE}
+                    {"const", KW_CONST}, {"main", KW_MAIN}
                 };
-                if (kwMap.count(buffer)) type = kwMap[buffer];
-                else type = ID;
+                
+                if (kwMap.count(buffer)) {
+                    type = kwMap[buffer];
+                } else {
+                    type = ID;
+                    // [核心改进] 满足“词法分析器填写符号表”的要求
+                    // 将识别到的标识符名称填入符号表，Value 暂时置空
+                    // 这里的 put 会利用 SymbolTable 默认的全局作用域
+                    if (symTable) {
+                        symTable->put(buffer, nullptr);
+                    }
+                }
             }
             break;
 
@@ -135,12 +146,9 @@ Token Lexer::nextInternal() {
                 buffer += ch;
                 state = IN_FLOAT;
             } else {
-                // 123. 后面不是数字，如果是 C 语言 1. 是合法的 float
-                // 这里假设必须有小数部分，或者回退。
-                // 简单处理：作为 float 返回
                 retract();
                 state = DONE;
-                type = FLOAT_CONST; 
+                type = FLOAT_CONST; // 处理 1. 这种情况
             }
             break;
 
@@ -177,7 +185,6 @@ Token Lexer::nextInternal() {
         case IN_AND: // 已读 &
             if (ch == '&') { buffer += ch; type = OP_AND; state = DONE; }
             else { 
-                // 单个 & 非法 (C--通常没有位运算)
                  std::cerr << "Invalid char & at line " << lineNo << std::endl;
                  return {END_OFF, "", lineNo};
             }
@@ -194,7 +201,7 @@ Token Lexer::nextInternal() {
         case IN_COMMENT_START: // 已读 /
             if (ch == '/') { 
                 state = IN_LINE_COMMENT; 
-                buffer.clear(); // 注释内容不需要保留为 Token
+                buffer.clear(); 
             } else if (ch == '*') {
                 state = IN_BLOCK_COMMENT;
                 buffer.clear();
@@ -207,20 +214,18 @@ Token Lexer::nextInternal() {
 
         case IN_LINE_COMMENT:
             if (ch == '\n') {
-                state = START; // 注释结束，重新开始
+                state = START; 
             }
-            // 否则一直消耗字符
             break;
 
         case IN_BLOCK_COMMENT:
             if (ch == '*') { state = IN_BLOCK_COMMENT_END; }
-            // 否则一直消耗
             break;
             
         case IN_BLOCK_COMMENT_END:
-            if (ch == '/') { state = START; } // */ 结束
-            else if (ch == '*') { state = IN_BLOCK_COMMENT_END; } // **...
-            else { state = IN_BLOCK_COMMENT; } // *a 继续注释
+            if (ch == '/') { state = START; } 
+            else if (ch == '*') { state = IN_BLOCK_COMMENT_END; } 
+            else { state = IN_BLOCK_COMMENT; } 
             break;
 
         case DONE:
