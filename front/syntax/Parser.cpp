@@ -9,7 +9,6 @@ ASTNode* Parser::makeLeaf(const Token& tok) {
         case INT_CONST:
             return new NumberExp(std::stoi(tok.content));
         case FLOAT_CONST:
-             // 暂时用整数存储
             return new NumberExp(std::stoi(tok.content)); 
         case ID:
         case KW_INT:

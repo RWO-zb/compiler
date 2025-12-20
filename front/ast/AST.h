@@ -132,9 +132,12 @@ public:
 // 数字常量: 123
 class NumberExp : public Exp {
 public:
-    int val;
+    bool isFloat; // 标记是否为浮点数
+    int intVal;
+    float floatVal;
 
-    NumberExp(int v) : val(v) {}
+    NumberExp(int v) : isFloat(false), intVal(v), floatVal(0.0) {}
+    NumberExp(float v) : isFloat(true), intVal(0), floatVal(v) {}
     
     Value* accept(IRGenerator& gen) override;
 };

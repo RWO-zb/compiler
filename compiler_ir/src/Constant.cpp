@@ -120,3 +120,14 @@ ConstantZero *ConstantZero::get(Type *ty, Module *m) {
  *constant int zero
  */
 std::string ConstantZero::print() { return "zeroinitializer"; }
+
+ConstantFloat *ConstantFloat::get(float val, Module *m) {
+    return new ConstantFloat(Type::get_float_type(m), val);
+}
+
+std::string ConstantFloat::print() {
+    // 将 float 转换为 LLVM IR 要求的 hex 格式字符串，或者简单的科学计数法
+    char buffer[50];
+    sprintf(buffer, "%e", this->value_); 
+    return std::string(buffer);
+}

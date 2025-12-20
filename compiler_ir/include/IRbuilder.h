@@ -296,6 +296,20 @@ public:
   ZextInst *create_zext(Value *val, Type *ty) {
     return ZextInst::create_zext(val, ty, this->BB_);
   }
+  BinaryInst *create_fadd(Value *lhs, Value *rhs) { return BinaryInst::create_add(lhs, rhs, this->BB_, m_); } 
+  BinaryInst *create_fsub(Value *lhs, Value *rhs) { return BinaryInst::create_sub(lhs, rhs, this->BB_, m_); } 
+  BinaryInst *create_fmul(Value *lhs, Value *rhs) { return BinaryInst::create_mul(lhs, rhs, this->BB_, m_); }
+  BinaryInst *create_fdiv(Value *lhs, Value *rhs) { return BinaryInst::create_sdiv(lhs, rhs, this->BB_, m_); } 
+
+  Instruction *create_fptosi(Value *val, Type *ty) { return new ZextInst(Instruction::fptosi, val, ty, BB_); } 
+  Instruction *create_sitofp(Value *val, Type *ty) { return new ZextInst(Instruction::sitofp, val, ty, BB_); }
+
+  CmpInst *create_fcmp_ne(Value *lhs, Value *rhs) { return CmpInst::create_cmp(CmpInst::NE, lhs, rhs, this->BB_, m_); }
+  CmpInst *create_fcmp_eq(Value *lhs, Value *rhs) { return CmpInst::create_cmp(CmpInst::EQ, lhs, rhs, this->BB_, m_); }
+  CmpInst *create_fcmp_gt(Value *lhs, Value *rhs) { return CmpInst::create_cmp(CmpInst::GT, lhs, rhs, this->BB_, m_); }
+  CmpInst *create_fcmp_ge(Value *lhs, Value *rhs) { return CmpInst::create_cmp(CmpInst::GE, lhs, rhs, this->BB_, m_); }
+  CmpInst *create_fcmp_lt(Value *lhs, Value *rhs) { return CmpInst::create_cmp(CmpInst::LT, lhs, rhs, this->BB_, m_); }
+  CmpInst *create_fcmp_le(Value *lhs, Value *rhs) { return CmpInst::create_cmp(CmpInst::LE, lhs, rhs, this->BB_, m_); }
 };
 
 #endif // SYSYC_IRBUILDER_H

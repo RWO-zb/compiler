@@ -40,6 +40,13 @@ public:
     getelementptr,
     zext, // zero extend
           // float binary operators Logical operators
+    fadd,
+    fsub,
+    fmul,
+    fdiv,
+    fptosi, // 浮点转整数 (float to signed int)
+    sitofp, // 整数转浮点 (signed int to float)
+    fcmp,   // 浮点比较
   };
   // create instruction, auto insert to bb
   // ty here is result type
@@ -140,7 +147,27 @@ public:
     case zext:
       return "zext";
       break;
-
+    case fadd: 
+      return "fadd";
+      break;
+    case fsub: 
+      return "fsub";
+      break;
+    case fmul:
+      return "fmul";
+      break;
+    case fdiv: 
+      return "fdiv";
+      break;
+    case fptosi:
+      return "fptosi";
+      break;
+    case sitofp: 
+      return "sitofp";
+      break;
+    case fcmp: 
+      return "fcmp";
+      break;
     default:
       return "";
       break;
@@ -172,7 +199,8 @@ public:
   bool is_zext() { return op_id_ == zext; }
 
   bool isBinary() {
-    return (is_add() || is_sub() || is_mul() || is_div()) &&
+    return (is_add() || is_sub() || is_mul() || is_div() || is_rem() || 
+            op_id_ == fadd || op_id_ == fsub || op_id_ == fmul || op_id_ == fdiv) &&
            ((int)get_num_operand() == 2);
   }
 
@@ -548,6 +576,7 @@ private:
 
 // 位扩展指令
 class ZextInst : public Instruction {
+  friend class IRBuilder;
 private:
   ZextInst(OpID op, Value *val, Type *ty, BasicBlock *bb);
   ZextInst(Type *ty, BasicBlock *bb)
