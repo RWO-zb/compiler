@@ -17,6 +17,15 @@ ASTNode* Parser::makeLeaf(const Token& tok) {
         case KW_FLOAT:
         case KW_MAIN: // main 视为标识符处理
             return new IdExp(tok.content); 
+
+        // 【核心修复】: 处理所有运算符，将其作为 IdExp 返回
+        // 这样 buildAST 中的 getChild(children, 1) 才能正确获取操作符内容
+        case OP_PLUS: case OP_MINUS: case OP_MUL: case OP_DIV: case OP_MOD:
+        case OP_ASSIGN:
+        case OP_EQ: case OP_NEQ: case OP_LT: case OP_GT: case OP_LE: case OP_GE:
+        case OP_AND: case OP_OR: case OP_NOT:
+            return new IdExp(tok.content);
+
         default:
             return nullptr;
     }
@@ -100,13 +109,13 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
     // 4. Decl & VarDecl
     if (lhs == "decl") return getChild(children, 0); 
     
-    // 【核心修复】: 在 varDecl 和 constDecl 中获取 bType 类型，并更新到 varDefList 中的所有节点
+    // 在 varDecl 和 constDecl 中获取 bType 类型，并更新到 varDefList 中的所有节点
     if (lhs == "varDecl" || lhs == "constDecl") {
         int typeIdx = (lhs == "constDecl") ? 1 : 0;
         int listIdx = (lhs == "constDecl") ? 2 : 1;
 
         std::string typeName = "int";
-        // 获取类型节点 (由 makeLeaf 生成的 IdExp)
+        // 获取类型节点
         if (auto typeNode = dynamic_cast<IdExp*>(getChild(children, typeIdx))) {
             typeName = typeNode->name;
         }
@@ -150,7 +159,6 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
     }
     
     // bType -> KW_INT | KW_FLOAT | KW_VOID
-    // 直接返回子节点 (IdExp) 供父节点提取名称
     if (lhs == "bType") return getChild(children, 0);
 
     // 5. Block
@@ -196,6 +204,7 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
         if (len == 1) return getChild(children, 0);
         if (len == 3) {
             std::string op = "unknown";
+            // 此时 getChild(1) 应该能正确返回操作符的 IdExp
             if (auto opNode = dynamic_cast<IdExp*>(getChild(children, 1))) {
                 op = opNode->name;
             } 
@@ -276,8 +285,7 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
          }
     }
     
-    // 默认回退：如果有子节点，返回第一个；否则空
-    // 这处理了 exp -> lOrExp 这种单链推导
+    // 默认回退
     if (!children.empty()) return children[0];
     return nullptr;
 }
@@ -319,6 +327,7 @@ ASTNode* Parser::parse() {
         if (act.type == Action::SHIFT) {
             stateStack.push(act.target);
             Token t = lexer.next();
+            // 这里会调用修正后的 makeLeaf
             nodeStack.push(makeLeaf(t)); 
             
             if (t.type == ID || type == ID) symbolStack.push_back("Ident");

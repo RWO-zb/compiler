@@ -84,6 +84,25 @@ BinaryInst *BinaryInst::create_mod(Value *v1, Value *v2, BasicBlock *bb, Module 
     return new BinaryInst(Type::get_int32_type(m), Instruction::mod, v1, v2, bb);
 }
 
+BinaryInst *BinaryInst::create_fadd(Value *v1, Value *v2, BasicBlock *bb, Module *m)
+{
+    return new BinaryInst(Type::get_float_type(m), Instruction::add, v1, v2, bb);
+}
+
+BinaryInst *BinaryInst::create_fsub(Value *v1, Value *v2, BasicBlock *bb, Module *m)
+{
+    return new BinaryInst(Type::get_float_type(m), Instruction::sub, v1, v2, bb);
+}
+
+BinaryInst *BinaryInst::create_fmul(Value *v1, Value *v2, BasicBlock *bb, Module *m)
+{
+    return new BinaryInst(Type::get_float_type(m), Instruction::mul, v1, v2, bb);
+}
+
+BinaryInst *BinaryInst::create_fdiv(Value *v1, Value *v2, BasicBlock *bb, Module *m)
+{
+    return new BinaryInst(Type::get_float_type(m), Instruction::sdiv, v1, v2, bb);
+}
 bool BinaryInst::isStaticCalculable() {
     auto cl = dynamic_cast<ConstantInt *>(get_operand(0));
     auto cr = dynamic_cast<ConstantInt *>(get_operand(1));

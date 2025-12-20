@@ -240,7 +240,12 @@ public:
 
   static BinaryInst *create_mod(Value *v1, Value *v2, BasicBlock *bb,
                                 Module *m);
-
+  // 【新增】浮点运算创建函数
+  static BinaryInst *create_fadd(Value *v1, Value *v2, BasicBlock *bb, Module *m);
+  static BinaryInst *create_fsub(Value *v1, Value *v2, BasicBlock *bb, Module *m);
+  static BinaryInst *create_fmul(Value *v1, Value *v2, BasicBlock *bb, Module *m);
+  static BinaryInst *create_fdiv(Value *v1, Value *v2, BasicBlock *bb, Module *m);
+  
   virtual BinaryInst *deepcopy(BasicBlock *parent) override {
     // 复制基本信息
     BinaryInst *newInst = new BinaryInst(type_, op_id_, parent);

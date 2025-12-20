@@ -296,13 +296,13 @@ public:
   ZextInst *create_zext(Value *val, Type *ty) {
     return ZextInst::create_zext(val, ty, this->BB_);
   }
-  BinaryInst *create_fadd(Value *lhs, Value *rhs) { return BinaryInst::create_add(lhs, rhs, this->BB_, m_); } 
-  BinaryInst *create_fsub(Value *lhs, Value *rhs) { return BinaryInst::create_sub(lhs, rhs, this->BB_, m_); } 
-  BinaryInst *create_fmul(Value *lhs, Value *rhs) { return BinaryInst::create_mul(lhs, rhs, this->BB_, m_); }
-  BinaryInst *create_fdiv(Value *lhs, Value *rhs) { return BinaryInst::create_sdiv(lhs, rhs, this->BB_, m_); } 
+  BinaryInst *create_fadd(Value *lhs, Value *rhs) { return BinaryInst::create_fadd(lhs, rhs, this->BB_, m_); } 
+  BinaryInst *create_fsub(Value *lhs, Value *rhs) { return BinaryInst::create_fsub(lhs, rhs, this->BB_, m_); } 
+  BinaryInst *create_fmul(Value *lhs, Value *rhs) { return BinaryInst::create_fmul(lhs, rhs, this->BB_, m_); }
+  BinaryInst *create_fdiv(Value *lhs, Value *rhs) { return BinaryInst::create_fdiv(lhs, rhs, this->BB_, m_); } 
 
-  Instruction *create_fptosi(Value *val, Type *ty) { return new ZextInst(Instruction::fptosi, val, ty, BB_); } 
-  Instruction *create_sitofp(Value *val, Type *ty) { return new ZextInst(Instruction::sitofp, val, ty, BB_); }
+  Instruction *create_fptosi(Value *val, Type *ty) { return FpToSiInst::create_fptosi(val, ty, BB_); } 
+  Instruction *create_sitofp(Value *val, Type *ty) { return SiToFpInst::create_sitofp(val, ty, BB_); }
 
   CmpInst *create_fcmp_ne(Value *lhs, Value *rhs) { return CmpInst::create_cmp(CmpInst::NE, lhs, rhs, this->BB_, m_); }
   CmpInst *create_fcmp_eq(Value *lhs, Value *rhs) { return CmpInst::create_cmp(CmpInst::EQ, lhs, rhs, this->BB_, m_); }
