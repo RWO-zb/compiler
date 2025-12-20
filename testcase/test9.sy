@@ -1,0 +1,36 @@
+// test_09_float_logic.sy
+// 目标：测试浮点数的比较逻辑和混合逻辑运算
+
+float getPI() {
+    return 3.14159;
+}
+
+int main() {
+    float a = 1.5;
+    float b = 2.5;
+    int res = 0;
+    
+    // 浮点比较
+    if (a < b) {
+        res = 1;
+    }
+    
+    // 浮点相等性测试 (注意精度问题，这里测试字面量相等)
+    if (getPI() > 3.0) {
+        res = res + 2; // res = 3
+    }
+    
+    // 混合逻辑：(float > float) && (int < int)
+    // 1.5 < 2.5 (True) && 10 > 5 (True)
+    if (a < b && 10 > 5) {
+        res = res + 4; // res = 7
+    }
+    
+    // 浮点数隐式转布尔值 (非0即真)
+    float zero = 0.0;
+    if (!zero) { // !0.0 -> True
+        res = res + 8; // res = 15
+    }
+    
+    return res; // 预期返回 15
+}

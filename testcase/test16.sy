@@ -1,0 +1,33 @@
+// test_16_return_check.sy
+// 目标：测试不同位置的 return 语句及后续代码的处理
+
+int func_with_dead_code(int a) {
+    if (a > 0) {
+        return 10;
+        a = 100; // 这行是死代码，编译器不应报错，但也不应执行
+    } else {
+        return 20;
+    }
+    return 0; // 这个 return 只有在 if/else 都没覆盖时才可能（逻辑上这里不可达，但语法上需要）
+}
+
+void void_func(int a) {
+    if (a == 0) {
+        return; // 空返回
+    }
+    int b = a * 2; // 如果 a!=0 继续执行
+}
+
+int main() {
+    int res = func_with_dead_code(5); // 10
+    
+    void_func(0);
+    
+    // 测试提前返回
+    return res; // 10
+    
+    // 下面的代码不应该影响程序结果
+    int dead_var = 500;
+    dead_var = dead_var + 1;
+    return dead_var;
+}

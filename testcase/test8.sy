@@ -1,0 +1,27 @@
+// test_08_func_nest.sy
+// 目标：测试函数调用的嵌套使用 f(g(x))
+
+int add(int a, int b) {
+    return a + b;
+}
+
+int square(int x) {
+    return x * x;
+}
+
+int half(int x) {
+    return x / 2;
+}
+
+int main() {
+    // 嵌套调用：square(add(2, 3)) -> square(5) -> 25
+    int t1 = square(add(2, 3));
+    
+    // 多层嵌套：half(square(4)) -> half(16) -> 8
+    int t2 = half(square(4));
+    
+    // 混合参数：add( t1, half(10) ) -> add(25, 5) -> 30
+    int t3 = add(t1, half(10));
+    
+    return t3 + t2; // 30 + 8 = 38
+}

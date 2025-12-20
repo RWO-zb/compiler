@@ -178,6 +178,9 @@ Value* IRGenerator::visit(FuncDef* node) {
 Value* IRGenerator::visit(BlockStmt* node) {
     scopeMgr.enter();
     for (auto stmt : node->stmts) {
+        if (builder->get_insert_block()->get_terminator()) {
+            break; // 停止生成后续死代码
+        }
         if (stmt) stmt->accept(*this);
     }
     scopeMgr.exit();

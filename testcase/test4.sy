@@ -1,0 +1,38 @@
+// test_04_func.sy
+// 目标：测试函数定义、调用及递归
+
+// 无返回值函数
+void log(int val) {
+    int temp = val;
+    return;
+}
+
+// 递归函数：计算阶乘
+int factorial(int n) {
+    if (n <= 1) {
+        return 1;
+    }
+    return n * factorial(n - 1);
+}
+
+// 多参数函数
+int add_three(int a, int b, int c) {
+    return a + b + c;
+}
+
+int main() {
+    int n = 5;
+    int fact = factorial(n); // 120
+    
+    log(fact);
+    
+    // 块作用域测试
+    {
+        int n = 10; // 这里的 n 不应影响外面的 n
+        fact = fact + n; // 130
+    }
+    
+    int sum = add_three(1, 2, 3); // 6
+    
+    return fact + sum; // 136
+}

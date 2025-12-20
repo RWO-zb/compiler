@@ -1,0 +1,36 @@
+// test_03_control.sy
+// 目标：测试条件分支和逻辑短路
+
+int main() {
+    int a = 10;
+    int b = 20;
+    int result = 0;
+
+    // 单分支 if
+    if (a < b) {
+        result = 1;
+    }
+
+    // 双分支 if-else 与 嵌套
+    if (a == b) {
+        result = 2;
+    } else {
+        if (a > 5) {
+            result = 3;
+        } else {
+            result = 4;
+        }
+    }
+
+    // 逻辑运算符 &&, || 
+    // 测试短路：如果 a > 0 为真，不应计算后面的除零错误（如果有的话）
+    if (a > 0 || b / 0 == 0) {
+        result = result + 10;
+    }
+
+    if (a > 100 && b > 0) {
+        result = 0;
+    }
+
+    return result; // 预期返回 13 (3 + 10)
+}

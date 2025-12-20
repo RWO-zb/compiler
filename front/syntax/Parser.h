@@ -12,7 +12,7 @@ private:
 
     std::stack<int> stateStack;       // SLR 状态栈
     std::stack<ASTNode*> nodeStack;   // AST 节点栈
-
+    std::string currentDeclType;
     // 将 token 转换成一个最基础的 ASTNode（终结符）
     ASTNode* makeLeaf(const Token& tok);
 

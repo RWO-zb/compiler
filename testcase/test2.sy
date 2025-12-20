@@ -1,0 +1,26 @@
+// test_02_vars.sy
+// 目标：测试变量声明种类、常量及隐式类型转换
+
+// 全局变量与常量
+int global_var = 100;
+const float PI = 3.14159;
+const int MAX_VAL = 255;
+
+int main() {
+    // 局部变量遮蔽全局变量（如果你的符号表支持Scope）
+    int global_var = 5; 
+    
+    // 一行声明多个变量
+    int x = 1, y = 2;
+    
+    // const 常量使用
+    const int c = 10;
+    
+    // 类型转换测试：int 赋值给 float
+    float f = x;        // 应该发生 sitofp
+    
+    // 混合运算类型提升：int + float -> float
+    float res = f + c;  
+    
+    return global_var + x; // 返回 6
+}

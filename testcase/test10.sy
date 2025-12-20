@@ -1,0 +1,34 @@
+// test_10_implicit_cast.sy
+// 目标：验证函数调用和返回时的类型自动转换机制
+
+// 接收 float，传入 int
+float add_float(float a, float b) {
+    return a + b;
+}
+
+// 接收 int，传入 float (截断)
+int float_to_int(float f) {
+    return f;
+}
+
+int main() {
+    int a = 2;
+    int b = 3;
+    
+    // 测试 1: int 实参传递给 float 形参
+    // add_float(2, 3) -> 2.0 + 3.0 = 5.0
+    float f_res = add_float(a, b); 
+    
+    // 测试 2: float 返回值赋给 int 变量
+    int i_res = f_res; // 5
+    
+    // 测试 3: float 实参传递给 int 形参 (截断)
+    // float_to_int(5.6) -> 5
+    int trunc_res = float_to_int(5.6);
+    
+    // 测试 4: 算术运算中的提升
+    // 2 + 2.5 -> 2.0 + 2.5 = 4.5 -> 赋值给 int -> 4
+    int mix_res = a + 2.5;
+    
+    return i_res + trunc_res + mix_res; // 5 + 5 + 4 = 14
+}

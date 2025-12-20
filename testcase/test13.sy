@@ -1,0 +1,32 @@
+// test_13_lexer_edge.sy
+// 目标：测试词法分析器的“最大匹配原则”和标识符命名边界
+
+int _start_with_underscore = 10;
+int intVal = 20; // 包含关键字前缀
+int if_result = 30; // 包含关键字
+
+int main() {
+    int iff = 5; // 看起来像关键字 if
+    int elsee = 6; // 看起来像关键字 else
+    
+    // 测试最大匹配原则：
+    // +++ 应被解析为 ++ (不支持) + (加号)？ 
+    // 但 C-- 文法没有 ++，所以应该是 + + ? 不，C--只有 +
+    // 我们测试合法的边界： >=, <=, ==
+    
+    int a = 10;
+    int b = 20;
+    int res = 0;
+    
+    if (a <= b) res = 1; // <=
+    if (a >= b) res = 2; // >=
+    
+    // 标识符混淆测试
+    int main_ret = _start_with_underscore + intVal + if_result; // 10+20+30 = 60
+    
+    if (iff < elsee) {
+        main_ret = main_ret + 1; // 61
+    }
+    
+    return main_ret; // 61
+}

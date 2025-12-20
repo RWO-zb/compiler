@@ -1,0 +1,23 @@
+// test_14_many_params.sy
+// 目标：测试超过4个参数以及混合类型的函数调用
+
+// 6个参数，混合 int 和 float
+int complex_add(int a, int b, float c, int d, float e, int f) {
+    // float 转 int 会截断
+    return a + b + c + d + e + f;
+}
+
+// 8个参数，压力测试
+int sum_eight(int a, int b, int c, int d, int e, int f, int g, int h) {
+    return a + b + c + d + e + f + g + h;
+}
+
+int main() {
+    // 1+2+3.3+4+5.5+6 = 1 + 2 + 3 + 4 + 5 + 6 = 21
+    int res1 = complex_add(1, 2, 3.3, 4, 5.5, 6);
+    
+    // 1+1+1+1+1+1+1+1 = 8
+    int res2 = sum_eight(1, 1, 1, 1, 1, 1, 1, 1);
+    
+    return res1 + res2; // 29
+}

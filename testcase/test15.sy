@@ -1,0 +1,26 @@
+// test_15_global_init.sy
+// 目标：测试全局变量的计算型初始化 (Compile-time evaluation)
+
+const int A = 10;
+const int B = 20;
+
+// 使用字面量运算初始化
+int global_simple = 1 + 2; // 3
+
+// 使用之前定义的 const 变量运算初始化
+int global_complex = A * 2 + B; // 10 * 2 + 20 = 40
+
+// 浮点常量运算
+const float PI = 3.14;
+float global_float = PI + 1.0; // 4.14
+
+int main() {
+    int local = global_simple + global_complex; // 3 + 40 = 43
+    
+    // 运行时再加一下，验证全局变量确实被正确加载了
+    if (global_float > 4.0) {
+        local = local + 1; // 44
+    }
+    
+    return local; // 44
+}

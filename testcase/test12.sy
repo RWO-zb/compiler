@@ -1,0 +1,37 @@
+// test_12_dangling_else.sy
+// 目标：验证 Dangling Else (悬挂Else) 的结合性是否正确 (应与最近的 if 结合)
+
+int main() {
+    int a = 10;
+    int b = 20;
+    int res = 0;
+    
+    // 场景 1: 无花括号，else 应属于 if (b > 5)
+    // 逻辑：a(10) > 5 [True] -> if (b(20) > 5) [True] -> res = 1. Else 不执行。
+    if (a > 5) 
+        if (b > 5) 
+            res = 1;
+        else 
+            res = 2;
+            
+    // 场景 2: 有花括号，else 属于外层 if
+    // 逻辑：a(10) < 5 [False] -> else 执行 -> res = 1 + 10 = 11
+    if (a < 5) {
+        if (b > 5)
+            res = 5;
+    } else {
+        res = res + 10;
+    }
+    
+    // 场景 3: 复杂的嵌套
+    if (a == 10)
+        if (b == 20)
+            if (res == 11)
+                res = 100; // 应该走到这里
+            else
+                res = 200;
+        else
+            res = 300;
+            
+    return res; // 预期返回 100
+}

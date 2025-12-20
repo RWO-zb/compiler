@@ -20,7 +20,7 @@ blockItem -> decl | stmt
 stmt -> lVal OP_ASSIGN exp SE_SEMICOLON | exp SE_SEMICOLON | SE_SEMICOLON | block | ifStmt | returnStmt
 ifStmt -> KW_IF SE_LPAREN cond SE_RPAREN stmt | KW_IF SE_LPAREN cond SE_RPAREN stmt KW_ELSE stmt
 returnStmt -> KW_RETURN exp SE_SEMICOLON | KW_RETURN SE_SEMICOLON
-exp -> addExp
+exp -> lOrExp
 cond -> lOrExp
 lVal -> ID
 primaryExp -> SE_LPAREN exp SE_RPAREN | lVal | number
@@ -40,4 +40,4 @@ eqExp -> relExp | eqExp eqOp relExp
 eqOp -> OP_EQ | OP_NEQ
 lAndExp -> eqExp | lAndExp OP_AND eqExp
 lOrExp -> lAndExp | lOrExp OP_OR lAndExp
-constExp -> addExp
+constExp -> lOrExp

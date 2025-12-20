@@ -9,12 +9,13 @@ ASTNode* Parser::makeLeaf(const Token& tok) {
         case INT_CONST:
             return new NumberExp(std::stoi(tok.content));
         case FLOAT_CONST:
-            return new NumberExp(std::stoi(tok.content)); 
+            // 支持浮点数字面量
+            return new NumberExp(std::stof(tok.content)); 
         case ID:
         case KW_INT:
         case KW_VOID:
         case KW_FLOAT:
-        case KW_MAIN: // main 视为标识符
+        case KW_MAIN: // main 视为标识符处理
             return new IdExp(tok.content); 
         default:
             return nullptr;
@@ -58,6 +59,7 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
         if (auto id = dynamic_cast<IdExp*>(getChild(children, 1))) name = id->name;
         
         std::vector<FuncFParam*> params;
+        // 参数列表在第4个位置 (index 3)
         if (auto listNode = dynamic_cast<CompUnit*>(getChild(children, 3))) {
             for (auto child : listNode->children) {
                 if (auto p = dynamic_cast<FuncFParam*>(child)) {
@@ -97,8 +99,31 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
 
     // 4. Decl & VarDecl
     if (lhs == "decl") return getChild(children, 0); 
-    if (lhs == "varDecl") return getChild(children, 1); 
-    if (lhs == "constDecl") return getChild(children, 2); 
+    
+    // 【核心修复】: 在 varDecl 和 constDecl 中获取 bType 类型，并更新到 varDefList 中的所有节点
+    if (lhs == "varDecl" || lhs == "constDecl") {
+        int typeIdx = (lhs == "constDecl") ? 1 : 0;
+        int listIdx = (lhs == "constDecl") ? 2 : 1;
+
+        std::string typeName = "int";
+        // 获取类型节点 (由 makeLeaf 生成的 IdExp)
+        if (auto typeNode = dynamic_cast<IdExp*>(getChild(children, typeIdx))) {
+            typeName = typeNode->name;
+        }
+
+        ASTNode* listNode = getChild(children, listIdx);
+        
+        // 遍历列表，修正类型
+        if (auto list = dynamic_cast<CompUnit*>(listNode)) {
+             for (auto child : list->children) {
+                 if (auto v = dynamic_cast<VarDefStmt*>(child)) {
+                     v->type = typeName;
+                 }
+             }
+        }
+        
+        return listNode; 
+    }
 
     if (lhs == "varDefList" || lhs == "constDefList") {
         if (len == 1) {
@@ -117,10 +142,16 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
         auto id = dynamic_cast<IdExp*>(getChild(children, 0));
         if (id) {
             Exp* init = nullptr;
+            // 检查是否有初始化值
             if (len >= 3) init = dynamic_cast<Exp*>(getChild(children, 2));
+            // 默认类型先设为 "int"，稍后在 varDecl 中被修正
             return new VarDefStmt("int", id->name, init); 
         }
     }
+    
+    // bType -> KW_INT | KW_FLOAT | KW_VOID
+    // 直接返回子节点 (IdExp) 供父节点提取名称
+    if (lhs == "bType") return getChild(children, 0);
 
     // 5. Block
     if (lhs == "block") return getChild(children, 1); 
@@ -138,11 +169,12 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
 
     // 6. Stmt
     if (lhs == "stmt") {
+        // 赋值语句: lVal = exp ;
         if (prod.rhs.size() > 1 && prod.rhs[1] == "OP_ASSIGN") {
              return new BinaryExp("=", (Exp*)getChild(children, 0), (Exp*)getChild(children, 2));
         }
         if (len == 1) return getChild(children, 0); 
-        if (len == 2) return getChild(children, 0); 
+        if (len == 2) return getChild(children, 0); // exp ;
     }
     
     if (lhs == "returnStmt") {
@@ -159,7 +191,7 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
     }
 
     // 7. Expressions
-    // 二元运算
+    // 二元运算 (包含逻辑、关系、算术)
     if (lhs == "addExp" || lhs == "mulExp" || lhs == "relExp" || lhs == "eqExp" || lhs == "lAndExp" || lhs == "lOrExp") {
         if (len == 1) return getChild(children, 0);
         if (len == 3) {
@@ -171,10 +203,9 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
         }
     }
     
-    // [修复1] 增加 unaryOp 的处理，确保能提取出操作符字符串
+    // 提取操作符
     if (lhs == "addOp" || lhs == "mulOp" || lhs == "relOp" || lhs == "eqOp" || lhs == "unaryOp") {
         if (getChild(children, 0)) return getChild(children, 0);
-        // 如果子节点为空(makeLeaf返回nullptr)，则从产生式右部获取(例如 OP_PLUS, OP_NOT)
         if (!prod.rhs.empty()) return new IdExp(prod.rhs[0]);
     }
 
@@ -214,11 +245,12 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
     if (lhs == "initVal") return getChild(children, 0);
     if (lhs == "lVal") return getChild(children, 0);
 
-    // [修复2] 核心：处理单目运算 (unaryOp unaryExp)
+    // 单目运算处理 (unaryOp unaryExp)
     if (lhs == "unaryExp") {
-         if(len==1) return getChild(children, 0); // primaryExp
-         // funcCall
-         if(prod.rhs[0] == "funcCall") return getChild(children, 0);
+         if(len==1) return getChild(children, 0); // primaryExp 或 funcCall
+         
+         // funcCall (如果文法是 unaryExp -> funcCall)
+         if(!prod.rhs.empty() && prod.rhs[0] == "funcCall") return getChild(children, 0);
 
          // 处理 unaryOp unaryExp (例如 -5, !x)
          if (len == 2) {
@@ -228,8 +260,7 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
              }
              Exp* exp = dynamic_cast<Exp*>(getChild(children, 1));
              
-             // 将单目运算转换为等价的二元运算，以便复用 IRGenerator
-             
+             // 将单目运算转换为等价的二元运算，复用 IRGenerator 逻辑
              // 逻辑非: !E  =>  E == 0
              if (op == "!" || op == "OP_NOT") {
                  return new BinaryExp("==", exp, new NumberExp(0));
@@ -245,6 +276,8 @@ ASTNode* Parser::buildAST(const Production& prod, std::vector<ASTNode*>& childre
          }
     }
     
+    // 默认回退：如果有子节点，返回第一个；否则空
+    // 这处理了 exp -> lOrExp 这种单链推导
     if (!children.empty()) return children[0];
     return nullptr;
 }
@@ -261,7 +294,7 @@ ASTNode* Parser::parse() {
         Token lookahead = lexer.peek();
         TokenType type = lookahead.type;
         
-        // 处理 KW_MAIN 当作 ID 的情况
+        // 容错处理：KW_MAIN 当作 ID 的情况
         Action act = slr.getAction(stateStack.top(), type);
         if (act.type == Action::ERROR && type == KW_MAIN) {
             Action idAct = slr.getAction(stateStack.top(), ID);
@@ -280,6 +313,7 @@ ASTNode* Parser::parse() {
         else if (act.type == Action::ACCEPT) actionStr = "accept";
         else actionStr = "error";
 
+        // 输出分析过程，严格符合格式要求
         std::cout << stepCount++ << "\t" << stackTopSym << "#" << inputSym << "\t" << actionStr << std::endl;
 
         if (act.type == Action::SHIFT) {

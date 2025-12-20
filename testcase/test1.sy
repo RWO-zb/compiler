@@ -1,0 +1,23 @@
+// test_01_basic.sy
+// 目标：测试最基本的程序结构和四则运算
+
+int main() {
+    int a = 10;
+    int b = 2;
+    
+    // 测试加减乘除模
+    int c = a + b;      // 12
+    int d = a * b;      // 20
+    int e = a / b;      // 5
+    int f = a % 3;      // 1
+    
+    // 测试单目负号
+    int g = -a;         // -10
+    
+    // 测试简单的浮点数
+    float pi = 3.14;
+    float r = 2.5;
+    float area = pi * r * r; 
+    
+    return c + d;       // 返回 32
+}
