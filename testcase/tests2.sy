@@ -1,0 +1,8 @@
+int _(int _1, int _2, int _3)
+{
+    const int _if = (_1 + 0);
+    const int _const = (_2 - 0);
+    const int ifconst = (_3 * 0);
+    if ((_if && _const) || (_if && _const) || (ifconst && (_if || _const))) { return 1; }
+    else { return 0; }
+}

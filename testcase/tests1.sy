@@ -1,0 +1,11 @@
+void _(int while_, int for_)
+{
+  const int if_ = 1;
+  
+  if(for_ == 0) 
+  {
+    return ;
+  }
+  
+  return ;
+}

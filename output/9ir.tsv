@@ -1,0 +1,21 @@
+source_filename = "..\..\testcase\test9.sy"
+define void @_(i32 %arg0, i32 %arg1) {
+label_entry:
+  %op2 = alloca i32
+  store i32 %arg0, i32* %op2
+  %op3 = alloca i32
+  store i32 %arg1, i32* %op3
+  %op4 = alloca i32
+  store i32 1, i32* %op4
+  %op5 = load i32, i32* %op3
+  %op6 = icmp eq i32 %op5, 0
+  %op7 = zext i1 %op6 to i32
+  %op8 = icmp ne i32 %op7, 0
+  br i1 %op8, label %label_if_true, label %label_if_next
+label_if_true:                                                ; preds = %label_entry
+  ret void
+label_if_false:
+  ret void
+label_if_next:                                                ; preds = %label_entry
+  ret void
+}
