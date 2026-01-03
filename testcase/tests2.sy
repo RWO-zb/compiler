@@ -1,4 +1,4 @@
-int _(int _1, int _2, int _3)
+int _(int _1,int _2, int _3)
 {
     const int _if = (_1 + 0);
     const int _const = (_2 - 0);
